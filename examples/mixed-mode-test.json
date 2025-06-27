@@ -1,0 +1,36 @@
+{
+  "name": "Mixed Duration and Iterations Test",
+  "description": "Test with both duration-based and iteration-based tests",
+  "global": {
+    "base_url": "https://jsonplaceholder.typicode.com",
+    "timeout": "10s",
+    "delay": "100ms",
+    "duration": "15s",
+    "headers": {
+      "User-Agent": "Bombardino/1.0",
+      "Accept": "application/json"
+    }
+  },
+  "tests": [
+    {
+      "name": "Duration-based test (15s)",
+      "method": "GET",
+      "path": "/posts",
+      "expected_status": [200]
+    },
+    {
+      "name": "Custom duration test (5s)",
+      "method": "GET", 
+      "path": "/users",
+      "duration": "5s",
+      "expected_status": [200]
+    },
+    {
+      "name": "Iteration-based test (10 requests)",
+      "method": "GET",
+      "path": "/comments",
+      "iterations": 10,
+      "expected_status": [200]
+    }
+  ]
+}

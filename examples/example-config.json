@@ -1,0 +1,85 @@
+{
+  "name": "API Stress Test Example",
+  "description": "Example configuration for testing REST APIs",
+  "global": {
+    "base_url": "https://jsonplaceholder.typicode.com",
+    "timeout": "30s",
+    "delay": "100ms",
+    "iterations": 100,
+    "headers": {
+      "User-Agent": "Bombardino/1.0",
+      "Accept": "application/json"
+    }
+  },
+  "tests": [
+    {
+      "name": "Get all posts",
+      "method": "GET",
+      "path": "/posts",
+      "expected_status": [200],
+      "iterations": 50,
+      "assertions": [
+        {
+          "type": "response_time",
+          "operator": "lt",
+          "value": "2s"
+        },
+        {
+          "type": "json_path",
+          "target": "$[0].id",
+          "operator": "exists",
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "Get single post",
+      "method": "GET",
+      "path": "/posts/1",
+      "expected_status": [200],
+      "delay": "50ms",
+      "iterations": 75,
+      "assertions": [
+        {
+          "type": "response_time",
+          "operator": "lt",
+          "value": "1s"
+        },
+        {
+          "type": "json_path",
+          "target": "$.id",
+          "operator": "eq",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "Create new post",
+      "method": "POST",
+      "path": "/posts",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "title": "Test Post",
+        "body": "Test content",
+        "userId": 1
+      },
+      "expected_status": [201],
+      "iterations": 25,
+      "assertions": [
+        {
+          "type": "response_time",
+          "operator": "lt",
+          "value": "3s"
+        },
+        {
+          "type": "json_path",
+          "target": "$.id",
+          "operator": "exists",
+          "value": true
+        }
+      ]
+    }
+  ]
+}

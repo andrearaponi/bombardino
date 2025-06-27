@@ -1,0 +1,23 @@
+{
+  "name": "SSL Skip Verify Test",
+  "description": "Test SSL skip verification with self-signed certificates",
+  "global": {
+    "base_url": "https://self-signed.badssl.com",
+    "timeout": "10s",
+    "delay": "1s",
+    "iterations": 3,
+    "insecure_skip_verify": true,
+    "headers": {
+      "User-Agent": "Bombardino/1.0"
+    }
+  },
+  "tests": [
+    {
+      "name": "Test self-signed certificate",
+      "method": "GET",
+      "path": "/",
+      "expected_status": [200],
+      "iterations": 2
+    }
+  ]
+}

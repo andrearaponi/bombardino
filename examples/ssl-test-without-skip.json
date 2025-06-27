@@ -1,0 +1,23 @@
+{
+  "name": "SSL Test Without Skip",
+  "description": "Test that should fail without SSL skip",
+  "global": {
+    "base_url": "https://self-signed.badssl.com",
+    "timeout": "10s",
+    "delay": "1s",
+    "iterations": 2,
+    "insecure_skip_verify": false,
+    "headers": {
+      "User-Agent": "Bombardino/1.0"
+    }
+  },
+  "tests": [
+    {
+      "name": "Test self-signed certificate (should fail)",
+      "method": "GET",
+      "path": "/",
+      "expected_status": [200],
+      "iterations": 1
+    }
+  ]
+}

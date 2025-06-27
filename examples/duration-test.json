@@ -1,0 +1,29 @@
+{
+  "name": "Duration-based Load Test",
+  "description": "Test API performance for 30 seconds",
+  "global": {
+    "base_url": "https://jsonplaceholder.typicode.com",
+    "timeout": "10s",
+    "delay": "100ms",
+    "duration": "30s",
+    "headers": {
+      "User-Agent": "Bombardino/1.0",
+      "Accept": "application/json"
+    }
+  },
+  "tests": [
+    {
+      "name": "Get posts continuously",
+      "method": "GET",
+      "path": "/posts",
+      "expected_status": [200]
+    },
+    {
+      "name": "Get users continuously", 
+      "method": "GET",
+      "path": "/users",
+      "expected_status": [200],
+      "delay": "200ms"
+    }
+  ]
+}
