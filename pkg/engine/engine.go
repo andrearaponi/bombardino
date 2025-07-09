@@ -15,23 +15,38 @@ import (
 
 	"github.com/andrearaponi/bombardino/internal/models"
 	"github.com/andrearaponi/bombardino/pkg/progress"
+	"github.com/google/uuid"
 )
 
 type Engine struct {
 	workers     int
 	progressBar *progress.ProgressBar
+	verbose     bool
+	logChan     chan models.DebugLog
+	debugLogs   []models.DebugLog
+	logMutex    sync.Mutex
 }
 
-func New(workers int, progressBar *progress.ProgressBar) *Engine {
-	return &Engine{
+func New(workers int, progressBar *progress.ProgressBar, verbose bool) *Engine {
+	e := &Engine{
 		workers:     workers,
 		progressBar: progressBar,
+		verbose:     verbose,
 	}
+	if verbose {
+		e.logChan = make(chan models.DebugLog, 100)
+	}
+	return e
 }
 
 func (e *Engine) Run(config *models.Config) *models.Summary {
 	jobs := make(chan Job, 1000)
 	results := make(chan models.TestResult, 1000)
+
+	// Start logger goroutine if verbose mode is enabled
+	if e.verbose {
+		go e.logger()
+	}
 
 	// Create context with timeout for duration-based tests
 	var ctx context.Context
@@ -69,7 +84,21 @@ func (e *Engine) Run(config *models.Config) *models.Summary {
 	}()
 
 	summary := e.collectResults(results, config.GetTotalRequests())
-	e.progressBar.Finish()
+	if e.progressBar != nil {
+		e.progressBar.Finish()
+	}
+
+	// Close log channel if verbose mode is enabled
+	if e.verbose {
+		close(e.logChan)
+		// Give logger time to flush remaining messages
+		time.Sleep(100 * time.Millisecond)
+		
+		// Add debug logs to summary
+		e.logMutex.Lock()
+		summary.DebugLogs = e.debugLogs
+		e.logMutex.Unlock()
+	}
 
 	return summary
 }
@@ -239,7 +268,9 @@ func (e *Engine) worker(ctx context.Context, jobs <-chan Job, results chan<- mod
 
 			result := e.executeTest(job)
 			results <- result
-			e.progressBar.Increment()
+			if e.progressBar != nil {
+				e.progressBar.Increment()
+			}
 
 			// Apply delay after processing the job (only for workers)
 			delay := job.TestCase.Delay
@@ -261,6 +292,12 @@ func (e *Engine) worker(ctx context.Context, jobs <-chan Job, results chan<- mod
 
 func (e *Engine) executeTest(job Job) models.TestResult {
 	start := time.Now()
+	
+	// Generate a unique request ID for tracking in verbose mode
+	requestID := ""
+	if e.verbose {
+		requestID = uuid.New().String()[:8] // Use first 8 chars for readability
+	}
 
 	req, err := e.createRequest(job)
 	if err != nil {
@@ -315,6 +352,36 @@ func (e *Engine) executeTest(job Job) models.TestResult {
 		Timeout:   timeout,
 		Transport: transport,
 	}
+	
+	// Log request details in verbose mode
+	if e.verbose {
+		log := models.DebugLog{
+			Timestamp: start,
+			RequestID: requestID,
+			Type:      "request",
+			TestName:  job.TestCase.Name,
+			Method:    req.Method,
+			URL:       req.URL.String(),
+			Headers:   make(map[string]string),
+		}
+		
+		// Convert headers
+		for key, values := range req.Header {
+			if len(values) > 0 {
+				log.Headers[key] = strings.Join(values, "; ")
+			}
+		}
+		
+		if req.Body != nil {
+			// Read and restore body for logging
+			bodyBytes, _ := io.ReadAll(req.Body)
+			req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+			log.Body = string(bodyBytes)
+		}
+		
+		e.logChan <- log
+	}
+	
 	resp, err := client.Do(req)
 	if err != nil {
 		return models.TestResult{
@@ -331,6 +398,29 @@ func (e *Engine) executeTest(job Job) models.TestResult {
 
 	body, _ := io.ReadAll(resp.Body)
 	responseTime := time.Since(start)
+	
+	// Log response details in verbose mode
+	if e.verbose {
+		log := models.DebugLog{
+			Timestamp:    time.Now(),
+			RequestID:    requestID,
+			Type:         "response",
+			TestName:     job.TestCase.Name,
+			StatusCode:   resp.StatusCode,
+			Headers:      make(map[string]string),
+			Body:         string(body),
+			ResponseTime: responseTime,
+		}
+		
+		// Convert headers
+		for key, values := range resp.Header {
+			if len(values) > 0 {
+				log.Headers[key] = strings.Join(values, "; ")
+			}
+		}
+		
+		e.logChan <- log
+	}
 
 	success := e.isExpectedStatus(resp.StatusCode, job.TestCase.ExpectedStatus)
 
@@ -347,7 +437,14 @@ func (e *Engine) executeTest(job Job) models.TestResult {
 	}
 
 	if !success {
-		result.Error = fmt.Sprintf("Unexpected status code: %d", resp.StatusCode)
+		if e.verbose {
+			// In verbose mode, include more details in the error message
+			result.Error = fmt.Sprintf("Unexpected status code: %d (expected: %v)\nResponse body: %s", 
+				resp.StatusCode, job.TestCase.ExpectedStatus, string(body))
+		} else {
+			result.Error = fmt.Sprintf("Unexpected status code: %d (expected: %v)", 
+				resp.StatusCode, job.TestCase.ExpectedStatus)
+		}
 	}
 
 	return result
@@ -517,4 +614,62 @@ func calculatePercentile(times []time.Duration, percentile float64) time.Duratio
 	upper := times[upperIndex]
 
 	return time.Duration(float64(lower) + weight*float64(upper-lower))
+}
+
+// logger is a goroutine that handles all verbose logging sequentially
+func (e *Engine) logger() {
+	for log := range e.logChan {
+		if e.progressBar != nil {
+			// Text mode: print formatted output
+			e.printDebugLog(log)
+		}
+		// Always store for potential JSON output
+		e.logMutex.Lock()
+		e.debugLogs = append(e.debugLogs, log)
+		e.logMutex.Unlock()
+	}
+}
+
+// printDebugLog formats and prints debug log for text output
+func (e *Engine) printDebugLog(log models.DebugLog) {
+	if log.Type == "request" {
+		fmt.Printf("\n=== REQUEST DEBUG ===")
+		fmt.Printf("\nRequest ID: %s", log.RequestID)
+		fmt.Printf("\nTimestamp: %s", log.Timestamp.Format(time.RFC3339))
+		fmt.Printf("\nTest: %s", log.TestName)
+		fmt.Printf("\nMethod: %s", log.Method)
+		fmt.Printf("\nURL: %s", log.URL)
+		if len(log.Headers) > 0 {
+			fmt.Printf("\nHeaders:")
+			for key, value := range log.Headers {
+				fmt.Printf("\n  %s: %s", key, value)
+			}
+		}
+		if log.Body != "" {
+			fmt.Printf("\nBody: %s", log.Body)
+		}
+		fmt.Printf("\n===================\n")
+	} else if log.Type == "response" {
+		fmt.Printf("\n=== RESPONSE DEBUG ===")
+		fmt.Printf("\nRequest ID: %s", log.RequestID)
+		fmt.Printf("\nTimestamp: %s", log.Timestamp.Format(time.RFC3339))
+		fmt.Printf("\nTest: %s", log.TestName)
+		fmt.Printf("\nStatus: %d", log.StatusCode)
+		if len(log.Headers) > 0 {
+			fmt.Printf("\nHeaders:")
+			for key, value := range log.Headers {
+				fmt.Printf("\n  %s: %s", key, value)
+			}
+		}
+		if log.Body != "" {
+			fmt.Printf("\nBody (%d bytes):", len(log.Body))
+			if len(log.Body) > 1000 {
+				fmt.Printf("\n%s... (truncated)", log.Body[:1000])
+			} else {
+				fmt.Printf("\n%s", log.Body)
+			}
+		}
+		fmt.Printf("\nResponse Time: %v", log.ResponseTime)
+		fmt.Printf("\n===================\n")
+	}
 }

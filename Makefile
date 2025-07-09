@@ -1,7 +1,7 @@
 # Bombardino Makefile
 # Build variables
 APP_NAME := bombardino
-VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "v0.1.0-beta")
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "v0.2.0-beta")
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_TIME := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS := -ldflags "-X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.buildTime=$(BUILD_TIME)"

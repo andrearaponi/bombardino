@@ -61,8 +61,12 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	progressBar := progress.New(cfg.GetTotalRequests())
-	testEngine := engine.New(*workers, progressBar)
+	// Only show progress bar for text output
+	var progressBar *progress.ProgressBar
+	if *outputFormat != "json" {
+		progressBar = progress.New(cfg.GetTotalRequests())
+	}
+	testEngine := engine.New(*workers, progressBar, *verbose)
 
 	results := testEngine.Run(cfg)
 
