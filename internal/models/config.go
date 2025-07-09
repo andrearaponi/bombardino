@@ -71,6 +71,21 @@ type Summary struct {
 	StatusCodes     map[int]int
 	Errors          map[string]int
 	EndpointResults map[string]*EndpointSummary
+	DebugLogs       []DebugLog // Added for verbose mode
+}
+
+type DebugLog struct {
+	Timestamp   time.Time         `json:"timestamp"`
+	RequestID   string            `json:"request_id,omitempty"`
+	Type        string            `json:"type"` // "request" or "response"
+	TestName    string            `json:"test_name"`
+	Method      string            `json:"method,omitempty"`
+	URL         string            `json:"url,omitempty"`
+	StatusCode  int               `json:"status_code,omitempty"`
+	Headers     map[string]string `json:"headers,omitempty"`
+	Body        string            `json:"body,omitempty"`
+	ResponseTime time.Duration    `json:"response_time,omitempty"`
+	Error       string            `json:"error,omitempty"`
 }
 
 type EndpointSummary struct {

@@ -31,6 +31,7 @@
 *   **Per-Endpoint Reporting:** Detailed metrics and success rates for each test case.
 *   **Custom Headers & Payloads:** Full HTTP request customization per endpoint.
 *   **Response Validation:** Expected status code validation with comprehensive error reporting.
+*   **Debug Mode:** Detailed request/response logging with UUID tracking for debugging.
 *   **Assertion System:** Advanced response validation (planned for future release).
 
 ## Installation
@@ -125,7 +126,7 @@ bombardino [options]
 Options:
   -config string     Path to JSON configuration file (required)
   -workers int       Number of concurrent workers (default: 10)
-  -verbose          Enable verbose output (default: false)
+  -verbose          Enable verbose debug output with request/response details (default: false)
   -output string    Output format: text or json (default: text)
   -version          Show version information
 ```
@@ -148,7 +149,7 @@ make run-example
 # Mixed mode testing (duration + iterations)
 ./bin/bombardino -config=examples/mixed-mode-test.json -workers=5
 
-# Verbose debugging output
+# Verbose debugging output with detailed request/response logging
 ./bin/bombardino -config=examples/example-config.json -verbose
 
 # Show version and build information
@@ -366,6 +367,124 @@ Combine both duration and iteration-based tests in the same configuration:
 *   **Resource Monitoring**: Observe system behavior during extended periods
 *   **Flexible Testing**: Mix different test types in a single run
 
+## Debug Mode
+
+Bombardino includes a powerful debug mode that provides detailed request and response logging for troubleshooting API issues. This feature is especially useful when you receive unexpected status codes or need to inspect the exact data being sent and received.
+
+### Enabling Debug Mode
+
+Use the `-verbose` flag to enable debug mode:
+
+```bash
+# Text output with debug information
+./bin/bombardino -config=test.json -verbose
+
+# JSON output with structured debug logs
+./bin/bombardino -config=test.json -verbose -output=json
+```
+
+### Text Debug Output
+
+When using verbose mode with text output, you'll see detailed request and response information:
+
+```
+=== REQUEST DEBUG ===
+Request ID: a4e140ee
+Timestamp: 2025-07-09T15:26:23+02:00
+Test: Test API Endpoint
+Method: GET
+URL: https://api.example.com/users/123
+Headers:
+  Authorization: Bearer token123
+  Content-Type: application/json
+  User-Agent: Bombardino/1.0
+Body: {"userId": 123}
+===================
+
+=== RESPONSE DEBUG ===
+Request ID: a4e140ee
+Timestamp: 2025-07-09T15:26:24+02:00
+Test: Test API Endpoint
+Status: 404 Not Found
+Headers:
+  Content-Type: application/json
+  Content-Length: 45
+Body (45 bytes):
+{"error": "User not found", "code": 404}
+Response Time: 234ms
+===================
+```
+
+### JSON Debug Output
+
+When using verbose mode with JSON output (`-verbose -output=json`), debug information is included as structured data:
+
+```json
+{
+  "summary": {
+    "total_requests": 2,
+    "successful_requests": 1,
+    "failed_requests": 1,
+    "success_rate_percent": 50.0,
+    "...": "..."
+  },
+  "endpoints": {
+    "...": "..."
+  },
+  "debug_logs": [
+    {
+      "timestamp": "2025-07-09T15:26:23+02:00",
+      "request_id": "a4e140ee",
+      "type": "request",
+      "test_name": "Test API Endpoint",
+      "method": "GET",
+      "url": "https://api.example.com/users/123",
+      "headers": {
+        "Authorization": "Bearer token123",
+        "Content-Type": "application/json",
+        "User-Agent": "Bombardino/1.0"
+      },
+      "body": "{\"userId\": 123}"
+    },
+    {
+      "timestamp": "2025-07-09T15:26:24+02:00",
+      "request_id": "a4e140ee",
+      "type": "response",
+      "test_name": "Test API Endpoint",
+      "status_code": 404,
+      "headers": {
+        "Content-Type": "application/json",
+        "Content-Length": "45"
+      },
+      "body": "{\"error\": \"User not found\", \"code\": 404}",
+      "response_time": 234000000
+    }
+  ],
+  "success": false
+}
+```
+
+### Debug Features
+
+- **Request ID Tracking**: Each request/response pair is linked with a unique 8-character UUID
+- **Parallel Request Handling**: Debug logs remain organized even with multiple concurrent workers
+- **Body Truncation**: Large response bodies are truncated at 1000 characters for readability in text mode
+- **Structured Logging**: JSON mode provides machine-readable debug information
+- **Enhanced Error Messages**: Verbose mode includes response body content in error messages
+
+### Use Cases
+
+Debug mode is particularly useful for:
+
+- **API Development**: Verify request format and headers
+- **Error Debugging**: See exact error responses when tests fail
+- **Integration Testing**: Validate API contract compliance
+- **Performance Analysis**: Correlate request/response details with timing
+- **CI/CD Troubleshooting**: Capture detailed logs for automated testing
+
+### Performance Impact
+
+Debug mode adds minimal overhead but generates substantial output. For production load testing, disable verbose mode to maximize performance.
 
 ## Report Output
 
@@ -479,6 +598,33 @@ Use the `-output=json` flag to get machine-readable output perfect for CI/CD int
       "success": true
     }
   },
+  "debug_logs": [
+    {
+      "timestamp": "2025-07-09T15:26:23+02:00",
+      "request_id": "a4e140ee",
+      "type": "request",
+      "test_name": "Get all posts",
+      "method": "GET",
+      "url": "https://jsonplaceholder.typicode.com/posts",
+      "headers": {
+        "User-Agent": "Bombardino/1.0",
+        "Accept": "application/json"
+      }
+    },
+    {
+      "timestamp": "2025-07-09T15:26:24+02:00",
+      "request_id": "a4e140ee",
+      "type": "response",
+      "test_name": "Get all posts",
+      "status_code": 200,
+      "headers": {
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Length": "6178"
+      },
+      "body": "[{\"userId\":1,\"id\":1,\"title\":\"sunt aut facere...\"}]",
+      "response_time": 234000000
+    }
+  ],
   "success": true
 }
 ```
@@ -569,6 +715,10 @@ jobs:
       - name: Run Performance Tests
         run: ./bin/bombardino -config=tests/api-performance.json -output=json > results.json
         
+      - name: Run Debug Tests (on failure)
+        if: failure()
+        run: ./bin/bombardino -config=tests/api-performance.json -verbose -output=json > debug-results.json
+        
       - name: Check Results
         run: |
           SUCCESS=$(cat results.json | jq -r '.success')
@@ -578,6 +728,10 @@ jobs:
           
           if [ "$SUCCESS" != "true" ]; then
             echo "Performance tests failed!"
+            if [ -f debug-results.json ]; then
+              echo "Debug information:"
+              cat debug-results.json | jq -r '.debug_logs[] | select(.type == "response" and .status_code != 200) | "Request ID: \(.request_id) - Status: \(.status_code) - Body: \(.body)"'
+            fi
             exit 1
           fi
           
@@ -659,6 +813,8 @@ bombardino/
 *   **Report export in various formats** (HTML, XML)
 *   **Load balancing** across multiple endpoints
 *   **Real-time dashboard**
+*   **Enhanced debug filtering** (filter by status code, test name, etc.)
+*   **Debug log export** (save debug logs to separate files)
 
 ## Contributing
 

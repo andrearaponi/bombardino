@@ -35,6 +35,7 @@ func (r *Reporter) GenerateReport(summary *models.Summary) {
 type JSONReport struct {
 	Summary   JSONSummary             `json:"summary"`
 	Endpoints map[string]JSONEndpoint `json:"endpoints"`
+	DebugLogs []models.DebugLog       `json:"debug_logs,omitempty"`
 	Success   bool                    `json:"success"`
 }
 
@@ -120,7 +121,7 @@ func (r *Reporter) createJSONReport(summary *models.Summary) JSONReport {
 		}
 	}
 
-	return JSONReport{
+	jsonReport := JSONReport{
 		Summary: JSONSummary{
 			TotalRequests:   summary.TotalRequests,
 			SuccessfulReqs:  summary.SuccessfulReqs,
@@ -140,6 +141,13 @@ func (r *Reporter) createJSONReport(summary *models.Summary) JSONReport {
 		Endpoints: endpoints,
 		Success:   summary.FailedReqs == 0,
 	}
+	
+	// Include debug logs if verbose mode is enabled and there are logs
+	if r.verbose && len(summary.DebugLogs) > 0 {
+		jsonReport.DebugLogs = summary.DebugLogs
+	}
+	
+	return jsonReport
 }
 
 func (r *Reporter) printHeader() {
