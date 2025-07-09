@@ -2,7 +2,7 @@
   <h1>Bombardino</h1>
   <p>
     <img src="https://img.shields.io/badge/status-active-green.svg" alt="Status">
-    <img src="https://img.shields.io/badge/release-0.1.0beta-green.svg" alt="Release">
+    <img src="https://img.shields.io/badge/release-0.2.0beta-green.svg" alt="Release">
     <img src="https://img.shields.io/badge/license-Mit-blue.svg" alt="License">
     <img src="https://img.shields.io/badge/language-Go-blue.svg" alt="Language">
   </p>
