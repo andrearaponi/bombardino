@@ -25,7 +25,7 @@ func main() {
 		workers      = flag.Int("workers", 10, "Number of concurrent workers")
 		verbose      = flag.Bool("verbose", false, "Enable verbose output")
 		showVersion  = flag.Bool("version", false, "Show version information")
-		outputFormat = flag.String("output", "text", "Output format: text or json")
+		outputFormat = flag.String("output", "text", "Output format: text, json, or html")
 	)
 	flag.Parse()
 
@@ -46,7 +46,7 @@ func main() {
 		fmt.Println("Options:")
 		fmt.Println("  -workers int      Number of concurrent workers (default: 10)")
 		fmt.Println("  -verbose          Enable verbose output (default: false)")
-		fmt.Println("  -output string    Output format: text or json (default: text)")
+		fmt.Println("  -output string    Output format: text, json, or html (default: text)")
 		fmt.Println("  -version          Show version information")
 		fmt.Println()
 		fmt.Println("Examples:")
@@ -63,7 +63,7 @@ func main() {
 
 	// Only show progress bar for text output
 	var progressBar *progress.ProgressBar
-	if *outputFormat != "json" {
+	if *outputFormat == "text" {
 		progressBar = progress.New(cfg.GetTotalRequests())
 	}
 	testEngine := engine.New(*workers, progressBar, *verbose)
@@ -71,13 +71,17 @@ func main() {
 	results := testEngine.Run(cfg)
 
 	// Generate report
-	if *outputFormat == "json" {
-		reporter := reporter.New(*verbose)
+	reporter := reporter.New(*verbose)
+	switch *outputFormat {
+	case "json":
 		if err := reporter.GenerateJSONReport(results); err != nil {
 			log.Fatalf("Failed to generate JSON report: %v", err)
 		}
-	} else {
-		reporter := reporter.New(*verbose)
+	case "html":
+		if err := reporter.GenerateHTMLReport(results); err != nil {
+			log.Fatalf("Failed to generate HTML report: %v", err)
+		}
+	default:
 		reporter.GenerateReport(results)
 	}
 
