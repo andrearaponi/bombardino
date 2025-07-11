@@ -127,7 +127,7 @@ Options:
   -config string     Path to JSON configuration file (required)
   -workers int       Number of concurrent workers (default: 10)
   -verbose          Enable verbose debug output with request/response details (default: false)
-  -output string    Output format: text or json (default: text)
+  -output string    Output format: text, json, or html (default: text)
   -version          Show version information
 ```
 
@@ -145,6 +145,9 @@ make run-example
 
 # CI/CD integration with JSON output
 ./bin/bombardino -config=ci-tests.json -output=json -workers=20
+
+# Generate HTML report for sharing
+./bin/bombardino -config=examples/example-config.json -output=html > report.html
 
 # Mixed mode testing (duration + iterations)
 ./bin/bombardino -config=examples/mixed-mode-test.json -workers=5
@@ -488,7 +491,7 @@ Debug mode adds minimal overhead but generates substantial output. For productio
 
 ## Report Output
 
-Bombardino generates detailed reports in two formats:
+Bombardino generates detailed reports in three formats:
 
 ### Text Format (Default)
 
@@ -536,6 +539,21 @@ P99:                 298ms
 ════════════════════════════════════════════════════════════════════════════════
 🚀 Test completed successfully!
 ```
+
+### HTML Format (Report Sharing)
+
+Use the `-output=html` flag to generate a formatted HTML report perfect for sharing with teams:
+
+```bash
+./bin/bombardino -config=test.json -output=html > report.html
+```
+
+The HTML report includes:
+- Interactive charts and visualizations
+- Detailed performance metrics with color coding
+- Professional formatting suitable for presentations
+- Responsive design that works on all devices
+- Complete test results including per-endpoint analysis
 
 ### JSON Format (CI/CD Friendly)
 
@@ -810,7 +828,7 @@ bombardino/
 *   **WebSocket support** for real-time applications
 *   **Web frontend for visualization**
 *   **Advanced metrics and charts**
-*   **Report export in various formats** (HTML, XML)
+*   **Enhanced report formats** (improved HTML styling and features)
 *   **Load balancing** across multiple endpoints
 *   **Real-time dashboard**
 *   **Enhanced debug filtering** (filter by status code, test name, etc.)

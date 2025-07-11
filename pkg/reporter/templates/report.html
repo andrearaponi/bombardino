@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bombardino Test Results</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1a1a1a;
+            text-align: center;
+            border-bottom: 3px solid {{if .Success}}#10b981{{else}}#ef4444{{end}};
+            padding-bottom: 10px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .metric-card {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+        }
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #1a1a1a;
+            margin: 10px 0;
+        }
+        .metric-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .section {
+            margin: 40px 0;
+        }
+        .section-title {
+            font-size: 1.5em;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .status-code {
+            display: inline-block;
+            padding: 5px 10px;
+            margin: 5px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status-2xx { background-color: #d1fae5; color: #065f46; }
+        .status-3xx { background-color: #e0e7ff; color: #3730a3; }
+        .status-4xx { background-color: #fed7aa; color: #92400e; }
+        .status-5xx { background-color: #fee2e2; color: #991b1b; }
+        .endpoint-card {
+            background-color: #f8f9fa;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #e0e0e0;
+        }
+        .endpoint-card.success {
+            border-left-color: #10b981;
+        }
+        .endpoint-card.failure {
+            border-left-color: #ef4444;
+        }
+        .endpoint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .endpoint-name {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        .endpoint-url {
+            color: #666;
+            font-size: 0.9em;
+            margin: 5px 0;
+        }
+        .response-times {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .time-metric {
+            text-align: center;
+        }
+        .time-value {
+            font-weight: bold;
+            color: #1a1a1a;
+        }
+        .time-label {
+            font-size: 0.8em;
+            color: #666;
+        }
+        .success-badge {
+            background-color: #d1fae5;
+            color: #065f46;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .failure-badge {
+            background-color: #fee2e2;
+            color: #991b1b;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Bombardino Test Results</h1>
+        
+        <div class="summary-grid">
+            <div class="metric-card">
+                <div class="metric-label">Total Requests</div>
+                <div class="metric-value">{{.Summary.TotalRequests}}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Success Rate</div>
+                <div class="metric-value" style="color: {{if .Success}}#10b981{{else}}#ef4444{{end}}">{{printf "%.1f" .Summary.SuccessRate}}%</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Requests/sec</div>
+                <div class="metric-value">{{printf "%.2f" .Summary.RequestsPerSec}}</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Avg Response Time</div>
+                <div class="metric-value">{{.Summary.AvgResponseTime}}</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">⏱️ Response Time Distribution</h2>
+            <div class="response-times">
+                <div class="time-metric">
+                    <div class="time-label">Minimum</div>
+                    <div class="time-value">{{.Summary.MinResponseTime}}</div>
+                </div>
+                <div class="time-metric">
+                    <div class="time-label">P50 (Median)</div>
+                    <div class="time-value">{{.Summary.P50ResponseTime}}</div>
+                </div>
+                <div class="time-metric">
+                    <div class="time-label">P95</div>
+                    <div class="time-value">{{.Summary.P95ResponseTime}}</div>
+                </div>
+                <div class="time-metric">
+                    <div class="time-label">P99</div>
+                    <div class="time-value">{{.Summary.P99ResponseTime}}</div>
+                </div>
+                <div class="time-metric">
+                    <div class="time-label">Maximum</div>
+                    <div class="time-value">{{.Summary.MaxResponseTime}}</div>
+                </div>
+            </div>
+        </div>
+
+        {{if .Summary.StatusCodes}}
+        <div class="section">
+            <h2 class="section-title">📈 Status Codes</h2>
+            <div>
+                {{range $code, $count := .Summary.StatusCodes}}
+                <span class="status-code {{statusClass $code}}">{{$code}}: {{$count}} ({{printf "%.1f" (percentage $count $.Summary.TotalRequests)}}%)</span>
+                {{end}}
+            </div>
+        </div>
+        {{end}}
+
+        {{if .Endpoints}}
+        <div class="section">
+            <h2 class="section-title">🎯 Endpoint Results</h2>
+            {{range .Endpoints}}
+            <div class="endpoint-card {{if .Success}}success{{else}}failure{{end}}">
+                <div class="endpoint-header">
+                    <div>
+                        <div class="endpoint-name">{{.Name}}</div>
+                        <div class="endpoint-url">{{.URL}}</div>
+                    </div>
+                    {{if .Success}}
+                    <span class="success-badge">✓ Success</span>
+                    {{else}}
+                    <span class="failure-badge">✗ Failed</span>
+                    {{end}}
+                </div>
+                <div>
+                    Requests: {{.TotalRequests}} | Success: {{.SuccessfulReqs}} ({{printf "%.1f" .SuccessRate}}%) | Failed: {{.FailedReqs}}
+                </div>
+                <div class="response-times">
+                    <div class="time-metric">
+                        <div class="time-label">Average</div>
+                        <div class="time-value">{{.AvgResponseTime}}</div>
+                    </div>
+                    <div class="time-metric">
+                        <div class="time-label">P50</div>
+                        <div class="time-value">{{.P50ResponseTime}}</div>
+                    </div>
+                    <div class="time-metric">
+                        <div class="time-label">P95</div>
+                        <div class="time-value">{{.P95ResponseTime}}</div>
+                    </div>
+                    <div class="time-metric">
+                        <div class="time-label">P99</div>
+                        <div class="time-value">{{.P99ResponseTime}}</div>
+                    </div>
+                </div>
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+
+        <div class="footer">
+            Generated by Bombardino
+        </div>
+    </div>
+</body>
+</html>

@@ -1,13 +1,19 @@
 package reporter
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"os"
 	"sort"
 	"strings"
 
 	"github.com/andrearaponi/bombardino/internal/models"
 )
+
+//go:embed templates/report.html
+var htmlTemplate string
 
 type Reporter struct {
 	verbose bool
@@ -308,3 +314,44 @@ func (r *Reporter) getStatusEmoji(statusCode int) string {
 		return "❓"
 	}
 }
+
+func (r *Reporter) GenerateHTMLReport(summary *models.Summary) error {
+	jsonReport := r.createJSONReport(summary)
+	
+	funcMap := template.FuncMap{
+		"percentage": func(part, total int) float64 {
+			if total == 0 {
+				return 0
+			}
+			return float64(part) / float64(total) * 100
+		},
+		"statusClass": func(status string) string {
+			if len(status) >= 1 {
+				switch status[0] {
+				case '2':
+					return "status-2xx"
+				case '3':
+					return "status-3xx"
+				case '4':
+					return "status-4xx"
+				case '5':
+					return "status-5xx"
+				}
+			}
+			return ""
+		},
+	}
+	
+	tmpl, err := template.New("report").Funcs(funcMap).Parse(htmlTemplate)
+	if err != nil {
+		return fmt.Errorf("failed to parse HTML template: %w", err)
+	}
+	
+	err = tmpl.Execute(os.Stdout, jsonReport)
+	if err != nil {
+		return fmt.Errorf("failed to execute HTML template: %w", err)
+	}
+	
+	return nil
+}
+
