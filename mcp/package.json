@@ -1,0 +1,31 @@
+{
+  "name": "bombardino-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for Bombardino - AI-powered API test generation",
+  "main": "dist/index.js",
+  "type": "module",
+  "bin": {
+    "bombardino-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc && node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "bombardino",
+    "api-testing",
+    "load-testing",
+    "ai"
+  ],
+  "author": "Andrea Raponi",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

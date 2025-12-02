@@ -1,0 +1,35 @@
+{
+  "name": "Think Time Demo",
+  "description": "Demonstrates realistic user simulation with think time",
+  "global": {
+    "base_url": "https://jsonplaceholder.typicode.com",
+    "timeout": "30s",
+    "delay": "50ms",
+    "iterations": 3,
+    "think_time_min": "200ms",
+    "think_time_max": "1s"
+  },
+  "tests": [
+    {
+      "name": "Browse Users",
+      "method": "GET",
+      "path": "/users",
+      "expected_status": [200],
+      "think_time": "500ms"
+    },
+    {
+      "name": "View User Details",
+      "method": "GET",
+      "path": "/users/1",
+      "expected_status": [200]
+    },
+    {
+      "name": "Browse Posts",
+      "method": "GET",
+      "path": "/posts",
+      "expected_status": [200],
+      "think_time_min": "100ms",
+      "think_time_max": "300ms"
+    }
+  ]
+}

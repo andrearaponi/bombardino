@@ -1,0 +1,62 @@
+{
+  "name": "Data-Driven Testing Demo",
+  "description": "Demonstrates running tests with different data sets",
+  "global": {
+    "base_url": "https://jsonplaceholder.typicode.com",
+    "timeout": "30s",
+    "delay": "100ms",
+    "iterations": 1
+  },
+  "tests": [
+    {
+      "name": "Get Multiple Users",
+      "method": "GET",
+      "path": "/users/${data.user_id}",
+      "expected_status": [200],
+      "data": [
+        {"user_id": 1, "expected_name": "Leanne Graham"},
+        {"user_id": 2, "expected_name": "Ervin Howell"},
+        {"user_id": 3, "expected_name": "Clementine Bauch"}
+      ],
+      "assertions": [
+        {
+          "type": "json_path",
+          "target": "body",
+          "operator": "exists",
+          "value": "name"
+        }
+      ]
+    },
+    {
+      "name": "Create Posts",
+      "method": "POST",
+      "path": "/posts",
+      "expected_status": [201],
+      "data": [
+        {
+          "title": "First Post",
+          "body": "This is the first post content",
+          "userId": 1
+        },
+        {
+          "title": "Second Post",
+          "body": "This is the second post content",
+          "userId": 2
+        }
+      ],
+      "body": {
+        "title": "${data.title}",
+        "body": "${data.body}",
+        "userId": "${data.userId}"
+      },
+      "assertions": [
+        {
+          "type": "json_path",
+          "target": "body",
+          "operator": "exists",
+          "value": "id"
+        }
+      ]
+    }
+  ]
+}

@@ -19,6 +19,7 @@ GOFMT := $(GOCMD) fmt
 BINARY_DIR := bin
 CMD_DIR := cmd/bombardino
 DIST_DIR := dist
+MCP_DIR := mcp
 
 # Binary names
 BINARY_UNIX := $(BINARY_DIR)/$(APP_NAME)
@@ -42,11 +43,20 @@ help: ## Show this help message
 
 # Build targets
 .PHONY: build
-build: ## Build the binary for current platform
+build: build-go build-mcp ## Build Go binary and MCP server
+
+.PHONY: build-go
+build-go: ## Build the Go binary for current platform
 	@echo "Building $(APP_NAME) $(VERSION)..."
 	@mkdir -p $(BINARY_DIR)
 	$(GOBUILD) $(LDFLAGS) -o $(BINARY_UNIX) ./$(CMD_DIR)
 	@echo "✅ Build complete: $(BINARY_UNIX)"
+
+.PHONY: build-mcp
+build-mcp: ## Build the MCP server
+	@echo "Building MCP server..."
+	@cd $(MCP_DIR) && npm install --silent && npm run build
+	@echo "✅ MCP server build complete: $(MCP_DIR)/dist/"
 
 .PHONY: build-all
 build-all: clean build-linux build-darwin build-windows ## Build binaries for all platforms
@@ -179,10 +189,18 @@ clean: ## Clean build artifacts
 	@rm -rf $(BINARY_DIR)
 	@rm -rf $(DIST_DIR)
 	@rm -f coverage.out coverage.html
+	@rm -rf $(MCP_DIR)/dist
 
 .PHONY: clean-all
 clean-all: clean ## Clean all artifacts including dependencies
 	$(GOMOD) clean -cache
+	@rm -rf $(MCP_DIR)/node_modules
+
+.PHONY: clean-mcp
+clean-mcp: ## Clean MCP server artifacts
+	@echo "Cleaning MCP server..."
+	@rm -rf $(MCP_DIR)/dist
+	@rm -rf $(MCP_DIR)/node_modules
 
 # Info targets
 .PHONY: version

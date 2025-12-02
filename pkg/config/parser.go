@@ -40,28 +40,45 @@ type rawConfig struct {
 }
 
 type rawGlobalConfig struct {
-	BaseURL            string            `json:"base_url"`
-	Timeout            string            `json:"timeout"`
-	Delay              string            `json:"delay"`
-	Iterations         int               `json:"iterations,omitempty"`
-	Duration           string            `json:"duration,omitempty"`
-	Headers            map[string]string `json:"headers,omitempty"`
-	InsecureSkipVerify bool              `json:"insecure_skip_verify,omitempty"`
+	BaseURL            string                 `json:"base_url"`
+	Timeout            string                 `json:"timeout"`
+	Delay              string                 `json:"delay"`
+	Iterations         int                    `json:"iterations,omitempty"`
+	Duration           string                 `json:"duration,omitempty"`
+	Headers            map[string]string      `json:"headers,omitempty"`
+	InsecureSkipVerify bool                   `json:"insecure_skip_verify,omitempty"`
+	Variables          map[string]interface{} `json:"variables,omitempty"`
+	ThinkTime          string                 `json:"think_time,omitempty"`
+	ThinkTimeMin       string                 `json:"think_time_min,omitempty"`
+	ThinkTimeMax       string                 `json:"think_time_max,omitempty"`
 }
 
 type rawTestCase struct {
-	Name               string            `json:"name"`
-	Method             string            `json:"method"`
-	Path               string            `json:"path"`
-	Headers            map[string]string `json:"headers,omitempty"`
-	Body               interface{}       `json:"body,omitempty"`
-	ExpectedStatus     []int             `json:"expected_status"`
-	Timeout            string            `json:"timeout,omitempty"`
-	Delay              string            `json:"delay,omitempty"`
-	Iterations         int               `json:"iterations,omitempty"`
-	Duration           string            `json:"duration,omitempty"`
-	Assertions         []rawAssertion    `json:"assertions,omitempty"`
-	InsecureSkipVerify *bool             `json:"insecure_skip_verify,omitempty"`
+	Name               string                   `json:"name"`
+	Method             string                   `json:"method"`
+	Path               string                   `json:"path"`
+	Headers            map[string]string        `json:"headers,omitempty"`
+	Body               interface{}              `json:"body,omitempty"`
+	ExpectedStatus     []int                    `json:"expected_status"`
+	Timeout            string                   `json:"timeout,omitempty"`
+	Delay              string                   `json:"delay,omitempty"`
+	Iterations         int                      `json:"iterations,omitempty"`
+	Duration           string                   `json:"duration,omitempty"`
+	Assertions         []rawAssertion           `json:"assertions,omitempty"`
+	InsecureSkipVerify *bool                    `json:"insecure_skip_verify,omitempty"`
+	Extract            []rawExtraction          `json:"extract,omitempty"`
+	DependsOn          []string                 `json:"depends_on,omitempty"`
+	ThinkTime          string                   `json:"think_time,omitempty"`
+	ThinkTimeMin       string                   `json:"think_time_min,omitempty"`
+	ThinkTimeMax       string                   `json:"think_time_max,omitempty"`
+	Data               []map[string]interface{} `json:"data,omitempty"`
+	DataFile           string                   `json:"data_file,omitempty"`
+}
+
+type rawExtraction struct {
+	Name   string `json:"name"`
+	Source string `json:"source"`
+	Path   string `json:"path"`
 }
 
 type rawAssertion struct {
@@ -72,14 +89,21 @@ type rawAssertion struct {
 }
 
 func parseConfig(raw *rawConfig) (*models.Config, error) {
-	globalTimeout, err := time.ParseDuration(raw.Global.Timeout)
-	if err != nil {
-		return nil, fmt.Errorf("invalid global timeout: %w", err)
+	globalTimeout := 30 * time.Second // default
+	var err error
+	if raw.Global.Timeout != "" {
+		globalTimeout, err = time.ParseDuration(raw.Global.Timeout)
+		if err != nil {
+			return nil, fmt.Errorf("invalid global timeout: %w", err)
+		}
 	}
 
-	globalDelay, err := time.ParseDuration(raw.Global.Delay)
-	if err != nil {
-		return nil, fmt.Errorf("invalid global delay: %w", err)
+	var globalDelay time.Duration
+	if raw.Global.Delay != "" {
+		globalDelay, err = time.ParseDuration(raw.Global.Delay)
+		if err != nil {
+			return nil, fmt.Errorf("invalid global delay: %w", err)
+		}
 	}
 
 	var globalDuration time.Duration
@@ -87,6 +111,30 @@ func parseConfig(raw *rawConfig) (*models.Config, error) {
 		globalDuration, err = time.ParseDuration(raw.Global.Duration)
 		if err != nil {
 			return nil, fmt.Errorf("invalid global duration: %w", err)
+		}
+	}
+
+	var globalThinkTime time.Duration
+	if raw.Global.ThinkTime != "" {
+		globalThinkTime, err = time.ParseDuration(raw.Global.ThinkTime)
+		if err != nil {
+			return nil, fmt.Errorf("invalid global think_time: %w", err)
+		}
+	}
+
+	var globalThinkTimeMin time.Duration
+	if raw.Global.ThinkTimeMin != "" {
+		globalThinkTimeMin, err = time.ParseDuration(raw.Global.ThinkTimeMin)
+		if err != nil {
+			return nil, fmt.Errorf("invalid global think_time_min: %w", err)
+		}
+	}
+
+	var globalThinkTimeMax time.Duration
+	if raw.Global.ThinkTimeMax != "" {
+		globalThinkTimeMax, err = time.ParseDuration(raw.Global.ThinkTimeMax)
+		if err != nil {
+			return nil, fmt.Errorf("invalid global think_time_max: %w", err)
 		}
 	}
 
@@ -101,6 +149,10 @@ func parseConfig(raw *rawConfig) (*models.Config, error) {
 			Duration:           globalDuration,
 			Headers:            raw.Global.Headers,
 			InsecureSkipVerify: raw.Global.InsecureSkipVerify,
+			Variables:          raw.Global.Variables,
+			ThinkTime:          globalThinkTime,
+			ThinkTimeMin:       globalThinkTimeMin,
+			ThinkTimeMax:       globalThinkTimeMax,
 		},
 	}
 
@@ -149,6 +201,48 @@ func parseConfig(raw *rawConfig) (*models.Config, error) {
 			}
 			test.Assertions = append(test.Assertions, assertion)
 		}
+
+		// Parse extraction rules
+		for _, rawExtract := range rawTest.Extract {
+			extraction := models.ExtractionRule{
+				Name:   rawExtract.Name,
+				Source: rawExtract.Source,
+				Path:   rawExtract.Path,
+			}
+			test.Extract = append(test.Extract, extraction)
+		}
+
+		// Copy dependencies
+		test.DependsOn = rawTest.DependsOn
+
+		// Parse think time settings
+		if rawTest.ThinkTime != "" {
+			thinkTime, err := time.ParseDuration(rawTest.ThinkTime)
+			if err != nil {
+				return nil, fmt.Errorf("invalid think_time for test %d: %w", i, err)
+			}
+			test.ThinkTime = thinkTime
+		}
+
+		if rawTest.ThinkTimeMin != "" {
+			thinkTimeMin, err := time.ParseDuration(rawTest.ThinkTimeMin)
+			if err != nil {
+				return nil, fmt.Errorf("invalid think_time_min for test %d: %w", i, err)
+			}
+			test.ThinkTimeMin = thinkTimeMin
+		}
+
+		if rawTest.ThinkTimeMax != "" {
+			thinkTimeMax, err := time.ParseDuration(rawTest.ThinkTimeMax)
+			if err != nil {
+				return nil, fmt.Errorf("invalid think_time_max for test %d: %w", i, err)
+			}
+			test.ThinkTimeMax = thinkTimeMax
+		}
+
+		// Copy data-driven test data
+		test.Data = rawTest.Data
+		test.DataFile = rawTest.DataFile
 
 		config.Tests = append(config.Tests, test)
 	}

@@ -1,0 +1,75 @@
+{
+  "name": "Advanced Features Demo",
+  "description": "Demonstrates assertions, request chaining, think time, and data-driven testing",
+  "global": {
+    "base_url": "https://jsonplaceholder.typicode.com",
+    "timeout": "30s",
+    "delay": "100ms",
+    "iterations": 1,
+    "think_time": "500ms",
+    "variables": {
+      "api_version": "v1",
+      "default_limit": 10
+    }
+  },
+  "tests": [
+    {
+      "name": "Get Users List",
+      "method": "GET",
+      "path": "/users",
+      "expected_status": [200],
+      "assertions": [
+        {
+          "type": "json_path",
+          "target": "body",
+          "operator": "exists",
+          "value": "0.id"
+        },
+        {
+          "type": "response_time",
+          "target": "response",
+          "operator": "lt",
+          "value": 5000
+        }
+      ],
+      "extract": [
+        {"name": "first_user_id", "source": "body", "path": "0.id"},
+        {"name": "first_user_name", "source": "body", "path": "0.name"}
+      ]
+    },
+    {
+      "name": "Get User Details",
+      "method": "GET",
+      "path": "/users/${first_user_id}",
+      "expected_status": [200],
+      "depends_on": ["Get Users List"],
+      "assertions": [
+        {
+          "type": "json_path",
+          "target": "body",
+          "operator": "eq",
+          "value": "${first_user_name}"
+        }
+      ],
+      "extract": [
+        {"name": "user_email", "source": "body", "path": "email"}
+      ]
+    },
+    {
+      "name": "Get User Posts",
+      "method": "GET",
+      "path": "/users/${first_user_id}/posts",
+      "expected_status": [200],
+      "depends_on": ["Get Users List"],
+      "think_time": "1s",
+      "assertions": [
+        {
+          "type": "json_path",
+          "target": "body",
+          "operator": "exists",
+          "value": "0"
+        }
+      ]
+    }
+  ]
+}

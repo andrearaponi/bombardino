@@ -1,0 +1,221 @@
+{
+  "name": "Bombardino v1.0.0 Full Feature Test Suite",
+  "description": "Comprehensive test validating all v1.0.0 features: Assertions, DAG, Variables, Think Time, Data-Driven Testing",
+  "global": {
+    "base_url": "http://localhost:8080",
+    "timeout": "30s",
+    "delay": "100ms",
+    "iterations": 1,
+    "think_time_min": "100ms",
+    "think_time_max": "300ms",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "tests": [
+    {
+      "name": "1. Health Check - Hello Endpoint",
+      "description": "Simple GET to verify server is running",
+      "method": "GET",
+      "path": "/hello",
+      "expected_status": [200],
+      "think_time": "50ms",
+      "headers": {
+        "Accept": "text/plain"
+      },
+      "assertions": [
+        {
+          "type": "status",
+          "target": "response",
+          "operator": "eq",
+          "value": 200
+        },
+        {
+          "type": "response_time",
+          "target": "response",
+          "operator": "lt",
+          "value": "5000ms"
+        }
+      ]
+    },
+    {
+      "name": "2. Create First Person",
+      "description": "POST to create a person - extracts ID for chaining",
+      "method": "POST",
+      "path": "/api/persons",
+      "expected_status": [201],
+      "body": {
+        "name": "Mario",
+        "surname": "Rossi",
+        "age": 30,
+        "height": 175.5,
+        "weight": 75.0,
+        "mail": "mario.rossi@bombardino-test.com"
+      },
+      "assertions": [
+        {
+          "type": "status",
+          "target": "response",
+          "operator": "eq",
+          "value": 201
+        },
+        {
+          "type": "json_path",
+          "target": "id",
+          "operator": "exists",
+          "value": ""
+        },
+        {
+          "type": "json_path",
+          "target": "name",
+          "operator": "eq",
+          "value": "Mario"
+        },
+        {
+          "type": "json_path",
+          "target": "surname",
+          "operator": "eq",
+          "value": "Rossi"
+        },
+        {
+          "type": "json_path",
+          "target": "age",
+          "operator": "eq",
+          "value": 30
+        }
+      ],
+      "extract": [
+        {"name": "person_id", "source": "body", "path": "id"},
+        {"name": "person_email", "source": "body", "path": "mail"},
+        {"name": "person_name", "source": "body", "path": "name"}
+      ]
+    },
+    {
+      "name": "3. Get Person by ID (Chained)",
+      "description": "GET using extracted ID - validates DAG execution",
+      "method": "GET",
+      "path": "/api/persons/${person_id}",
+      "expected_status": [200],
+      "depends_on": ["2. Create First Person"],
+      "assertions": [
+        {
+          "type": "json_path",
+          "target": "id",
+          "operator": "exists",
+          "value": ""
+        },
+        {
+          "type": "json_path",
+          "target": "name",
+          "operator": "eq",
+          "value": "Mario"
+        },
+        {
+          "type": "response_time",
+          "target": "response",
+          "operator": "lt",
+          "value": "2000ms"
+        }
+      ]
+    },
+    {
+      "name": "4. Get Person by Email (Chained)",
+      "description": "GET by email using extracted variable",
+      "method": "GET",
+      "path": "/api/persons/by-mail?mail=${person_email}",
+      "expected_status": [200],
+      "depends_on": ["2. Create First Person"],
+      "assertions": [
+        {
+          "type": "json_path",
+          "target": "mail",
+          "operator": "contains",
+          "value": "bombardino-test.com"
+        }
+      ]
+    },
+    {
+      "name": "5. Update Person (Chained)",
+      "description": "PUT to update person - uses extracted ID",
+      "method": "PUT",
+      "path": "/api/persons/${person_id}",
+      "expected_status": [200],
+      "depends_on": ["3. Get Person by ID (Chained)"],
+      "body": {
+        "name": "Mario",
+        "surname": "Rossi-Updated",
+        "age": 31,
+        "height": 176.0,
+        "weight": 76.0,
+        "mail": "mario.rossi@bombardino-test.com"
+      },
+      "assertions": [
+        {
+          "type": "json_path",
+          "target": "surname",
+          "operator": "eq",
+          "value": "Rossi-Updated"
+        },
+        {
+          "type": "json_path",
+          "target": "age",
+          "operator": "eq",
+          "value": 31
+        }
+      ]
+    },
+    {
+      "name": "6. Get All Persons",
+      "description": "GET all - verify list contains our person",
+      "method": "GET",
+      "path": "/api/persons",
+      "expected_status": [200],
+      "depends_on": ["5. Update Person (Chained)"],
+      "assertions": [
+        {
+          "type": "json_path",
+          "target": "0.id",
+          "operator": "exists",
+          "value": ""
+        },
+        {
+          "type": "json_path",
+          "target": "0.surname",
+          "operator": "eq",
+          "value": "Rossi-Updated"
+        }
+      ]
+    },
+    {
+      "name": "7. Delete Person (Chained)",
+      "description": "DELETE using extracted ID - cleanup",
+      "method": "DELETE",
+      "path": "/api/persons/${person_id}",
+      "expected_status": [204],
+      "depends_on": ["6. Get All Persons"],
+      "think_time": "200ms"
+    },
+    {
+      "name": "8. Verify Deletion",
+      "description": "GET deleted person should return 404",
+      "method": "GET",
+      "path": "/api/persons/${person_id}",
+      "expected_status": [404],
+      "depends_on": ["7. Delete Person (Chained)"],
+      "assertions": [
+        {
+          "type": "status",
+          "target": "response",
+          "operator": "eq",
+          "value": 404
+        },
+        {
+          "type": "json_path",
+          "target": "message",
+          "operator": "contains",
+          "value": "not found"
+        }
+      ]
+    }
+  ]
+}

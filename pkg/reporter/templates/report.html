@@ -5,205 +5,809 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bombardino Test Results</title>
     <style>
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-green: #10b981;
+            --accent-green-dim: rgba(16, 185, 129, 0.2);
+            --accent-red: #ef4444;
+            --accent-red-dim: rgba(239, 68, 68, 0.2);
+            --accent-yellow: #f59e0b;
+            --accent-yellow-dim: rgba(245, 158, 11, 0.2);
+            --accent-blue: #3b82f6;
+            --accent-blue-dim: rgba(59, 130, 246, 0.2);
+            --accent-purple: #8b5cf6;
+            --border-color: #475569;
+            --gradient-start: #1e293b;
+            --gradient-end: #0f172a;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --bg-card: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #475569;
+            --text-muted: #94a3b8;
+            --border-color: #e2e8f0;
+            --gradient-start: #ffffff;
+            --gradient-end: #f1f5f9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
             line-height: 1.6;
-            color: #333;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
         }
+
         .container {
-            background-color: white;
-            border-radius: 8px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .logo {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Status Banner */
+        .status-banner {
+            background: var(--bg-secondary);
+            border-radius: 16px;
             padding: 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #1a1a1a;
-            text-align: center;
-            border-bottom: 3px solid {{if .Success}}#10b981{{else}}#ef4444{{end}};
-            padding-bottom: 10px;
-        }
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
             gap: 20px;
-            margin: 30px 0;
         }
-        .metric-card {
-            background-color: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .status-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .status-icon.success {
+            background: var(--accent-green-dim);
+            color: var(--accent-green);
+        }
+
+        .status-icon.failure {
+            background: var(--accent-red-dim);
+            color: var(--accent-red);
+        }
+
+        .status-text h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .status-text p {
+            color: var(--text-secondary);
+        }
+
+        .quick-stats {
+            display: flex;
+            gap: 30px;
+        }
+
+        .quick-stat {
             text-align: center;
-            border: 1px solid #e0e0e0;
         }
-        .metric-value {
-            font-size: 2em;
-            font-weight: bold;
-            color: #1a1a1a;
-            margin: 10px 0;
+
+        .quick-stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-blue);
         }
-        .metric-label {
-            color: #666;
-            font-size: 0.9em;
+
+        .quick-stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .section {
-            margin: 40px 0;
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
         }
-        .section-title {
-            font-size: 1.5em;
-            color: #1a1a1a;
-            margin-bottom: 20px;
+
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .card-header {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            margin-bottom: 20px;
         }
-        .status-code {
-            display: inline-block;
-            padding: 5px 10px;
-            margin: 5px;
+
+        .card-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+        }
+
+        .card-icon.requests { background: var(--accent-blue-dim); }
+        .card-icon.success { background: var(--accent-green-dim); }
+        .card-icon.failed { background: var(--accent-red-dim); }
+        .card-icon.speed { background: var(--accent-purple); background: rgba(139, 92, 246, 0.2); }
+
+        .card-title {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+
+        .card-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--bg-card);
             border-radius: 4px;
-            font-weight: bold;
+            overflow: hidden;
         }
-        .status-2xx { background-color: #d1fae5; color: #065f46; }
-        .status-3xx { background-color: #e0e7ff; color: #3730a3; }
-        .status-4xx { background-color: #fed7aa; color: #92400e; }
-        .status-5xx { background-color: #fee2e2; color: #991b1b; }
-        .endpoint-card {
-            background-color: #f8f9fa;
-            padding: 20px;
-            margin: 15px 0;
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-fill.success { background: linear-gradient(90deg, var(--accent-green) 0%, #34d399 100%); }
+        .progress-fill.failure { background: linear-gradient(90deg, var(--accent-red) 0%, #f87171 100%); }
+
+        /* Section */
+        .section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-icon {
+            font-size: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        /* Response Times Chart */
+        .response-times-chart {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 200px;
+            padding: 20px 0;
+            gap: 20px;
+        }
+
+        .chart-bar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+            max-width: 120px;
+        }
+
+        .bar {
+            width: 100%;
+            max-width: 60px;
+            background: linear-gradient(180deg, var(--accent-blue) 0%, var(--accent-purple) 100%);
+            border-radius: 8px 8px 0 0;
+            transition: height 0.5s ease;
+            position: relative;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.85rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .bar-label {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* Status Codes */
+        .status-codes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .status-code-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            background: var(--bg-card);
+            border-radius: 12px;
+        }
+
+        .status-code-badge {
+            padding: 6px 12px;
             border-radius: 8px;
-            border-left: 4px solid #e0e0e0;
+            font-weight: 700;
+            font-size: 0.9rem;
         }
+
+        .status-2xx { background: var(--accent-green-dim); color: var(--accent-green); }
+        .status-3xx { background: var(--accent-blue-dim); color: var(--accent-blue); }
+        .status-4xx { background: var(--accent-yellow-dim); color: var(--accent-yellow); }
+        .status-5xx { background: var(--accent-red-dim); color: var(--accent-red); }
+
+        .status-code-count {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .status-code-percent {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Assertions */
+        .assertions-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .assertion-stat {
+            text-align: center;
+            padding: 20px;
+            background: var(--bg-card);
+            border-radius: 12px;
+        }
+
+        .assertion-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .assertion-stat-value.total { color: var(--accent-blue); }
+        .assertion-stat-value.passed { color: var(--accent-green); }
+        .assertion-stat-value.failed { color: var(--accent-red); }
+
+        .assertion-stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+
+        /* Endpoint Cards */
+        .endpoint-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .endpoint-card:hover {
+            transform: translateX(5px);
+        }
+
         .endpoint-card.success {
-            border-left-color: #10b981;
+            border-left-color: var(--accent-green);
         }
+
         .endpoint-card.failure {
-            border-left-color: #ef4444;
+            border-left-color: var(--accent-red);
         }
+
         .endpoint-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
+
         .endpoint-name {
-            font-weight: bold;
-            font-size: 1.1em;
+            font-size: 1.1rem;
+            font-weight: 700;
         }
+
         .endpoint-url {
-            color: #666;
-            font-size: 0.9em;
-            margin: 5px 0;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-family: 'Fira Code', monospace;
+            margin-top: 5px;
         }
-        .response-times {
+
+        .endpoint-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .endpoint-badge.success {
+            background: var(--accent-green-dim);
+            color: var(--accent-green);
+        }
+
+        .endpoint-badge.failure {
+            background: var(--accent-red-dim);
+            color: var(--accent-red);
+        }
+
+        .endpoint-stats {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 10px;
+            gap: 15px;
             margin-top: 15px;
         }
-        .time-metric {
+
+        .endpoint-stat {
             text-align: center;
         }
-        .time-value {
-            font-weight: bold;
-            color: #1a1a1a;
+
+        .endpoint-stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
         }
-        .time-label {
-            font-size: 0.8em;
-            color: #666;
+
+        .endpoint-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
-        .success-badge {
-            background-color: #d1fae5;
-            color: #065f46;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.9em;
+
+        .endpoint-assertions {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
         }
-        .failure-badge {
-            background-color: #fee2e2;
-            color: #991b1b;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.9em;
+
+        .endpoint-assertions-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
+
+        .assertions-mini-stats {
+            display: flex;
+            gap: 20px;
+        }
+
+        .assertions-mini-stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9rem;
+        }
+
+        .assertions-mini-stat.passed { color: var(--accent-green); }
+        .assertions-mini-stat.failed { color: var(--accent-red); }
+
+        /* Errors Section */
+        .errors-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .error-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--accent-red-dim);
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-red);
+        }
+
+        .error-message {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .error-count {
+            background: var(--accent-red);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* Footer */
         .footer {
             text-align: center;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
-            color: #666;
+            padding: 30px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: var(--accent-blue);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .status-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .quick-stats {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .response-times-chart {
+                flex-wrap: wrap;
+                height: auto;
+            }
+
+            .assertions-summary {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card, .section, .endpoint-card {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(4) { animation-delay: 0.4s; }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
         }
     </style>
 </head>
 <body>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+        🌙
+    </button>
+
     <div class="container">
-        <h1>🚀 Bombardino Test Results</h1>
-        
-        <div class="summary-grid">
-            <div class="metric-card">
-                <div class="metric-label">Total Requests</div>
-                <div class="metric-value">{{.Summary.TotalRequests}}</div>
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">🚀</div>
+            <h1 class="title">Bombardino</h1>
+            <p class="subtitle">Load Test Results</p>
+        </header>
+
+        <!-- Status Banner -->
+        <div class="status-banner">
+            <div class="status-indicator">
+                <div class="status-icon {{if .Success}}success{{else}}failure{{end}}">
+                    {{if .Success}}✓{{else}}✗{{end}}
+                </div>
+                <div class="status-text">
+                    <h2>{{if .Success}}All Tests Passed{{else}}Some Tests Failed{{end}}</h2>
+                    <p>{{.Summary.TotalRequests}} requests completed in {{.Summary.TotalTime}}</p>
+                </div>
             </div>
-            <div class="metric-card">
-                <div class="metric-label">Success Rate</div>
-                <div class="metric-value" style="color: {{if .Success}}#10b981{{else}}#ef4444{{end}}">{{printf "%.1f" .Summary.SuccessRate}}%</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">Requests/sec</div>
-                <div class="metric-value">{{printf "%.2f" .Summary.RequestsPerSec}}</div>
-            </div>
-            <div class="metric-card">
-                <div class="metric-label">Avg Response Time</div>
-                <div class="metric-value">{{.Summary.AvgResponseTime}}</div>
+            <div class="quick-stats">
+                <div class="quick-stat">
+                    <div class="quick-stat-value">{{printf "%.1f" .Summary.SuccessRate}}%</div>
+                    <div class="quick-stat-label">Success Rate</div>
+                </div>
+                <div class="quick-stat">
+                    <div class="quick-stat-value">{{printf "%.2f" .Summary.RequestsPerSec}}</div>
+                    <div class="quick-stat-label">Requests/sec</div>
+                </div>
+                <div class="quick-stat">
+                    <div class="quick-stat-value">{{.Summary.AvgResponseTime}}</div>
+                    <div class="quick-stat-label">Avg Response</div>
+                </div>
             </div>
         </div>
 
+        <!-- Summary Cards -->
+        <div class="cards-grid">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon requests">📊</div>
+                    <span class="card-title">Total Requests</span>
+                </div>
+                <div class="card-value">{{.Summary.TotalRequests}}</div>
+                <div class="card-subtitle">requests executed</div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon success">✓</div>
+                    <span class="card-title">Successful</span>
+                </div>
+                <div class="card-value" style="color: var(--accent-green);">{{.Summary.SuccessfulReqs}}</div>
+                <div class="card-subtitle">{{printf "%.1f" .Summary.SuccessRate}}% success rate</div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill success" style="width: {{printf "%.1f" .Summary.SuccessRate}}%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon failed">✗</div>
+                    <span class="card-title">Failed</span>
+                </div>
+                <div class="card-value" style="color: var(--accent-red);">{{.Summary.FailedReqs}}</div>
+                <div class="card-subtitle">{{printf "%.1f" (sub 100 .Summary.SuccessRate)}}% failure rate</div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill failure" style="width: {{printf "%.1f" (sub 100 .Summary.SuccessRate)}}%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon speed">⚡</div>
+                    <span class="card-title">Throughput</span>
+                </div>
+                <div class="card-value">{{printf "%.2f" .Summary.RequestsPerSec}}</div>
+                <div class="card-subtitle">requests per second</div>
+            </div>
+        </div>
+
+        <!-- Assertions Section -->
+        {{if gt .Summary.TotalAssertions 0}}
         <div class="section">
-            <h2 class="section-title">⏱️ Response Time Distribution</h2>
-            <div class="response-times">
-                <div class="time-metric">
-                    <div class="time-label">Minimum</div>
-                    <div class="time-value">{{.Summary.MinResponseTime}}</div>
+            <div class="section-header">
+                <span class="section-icon">✅</span>
+                <h2 class="section-title">Assertions</h2>
+            </div>
+            <div class="assertions-summary">
+                <div class="assertion-stat">
+                    <div class="assertion-stat-value total">{{.Summary.TotalAssertions}}</div>
+                    <div class="assertion-stat-label">Total Assertions</div>
                 </div>
-                <div class="time-metric">
-                    <div class="time-label">P50 (Median)</div>
-                    <div class="time-value">{{.Summary.P50ResponseTime}}</div>
+                <div class="assertion-stat">
+                    <div class="assertion-stat-value passed">{{.Summary.AssertionsPassed}}</div>
+                    <div class="assertion-stat-label">Passed</div>
                 </div>
-                <div class="time-metric">
-                    <div class="time-label">P95</div>
-                    <div class="time-value">{{.Summary.P95ResponseTime}}</div>
+                <div class="assertion-stat">
+                    <div class="assertion-stat-value failed">{{.Summary.AssertionsFailed}}</div>
+                    <div class="assertion-stat-label">Failed</div>
                 </div>
-                <div class="time-metric">
-                    <div class="time-label">P99</div>
-                    <div class="time-value">{{.Summary.P99ResponseTime}}</div>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" style="height: 12px;">
+                    <div class="progress-fill success" style="width: {{percentage .Summary.AssertionsPassed .Summary.TotalAssertions}}%;"></div>
                 </div>
-                <div class="time-metric">
-                    <div class="time-label">Maximum</div>
-                    <div class="time-value">{{.Summary.MaxResponseTime}}</div>
+            </div>
+        </div>
+        {{end}}
+
+        <!-- Response Times -->
+        <div class="section">
+            <div class="section-header">
+                <span class="section-icon">⏱️</span>
+                <h2 class="section-title">Response Time Distribution</h2>
+            </div>
+            <div class="response-times-chart">
+                <div class="chart-bar">
+                    <div class="bar" style="height: 40px;">
+                        <span class="bar-value">{{.Summary.MinResponseTime}}</span>
+                    </div>
+                    <span class="bar-label">Minimum</span>
+                </div>
+                <div class="chart-bar">
+                    <div class="bar" style="height: 80px;">
+                        <span class="bar-value">{{.Summary.P50ResponseTime}}</span>
+                    </div>
+                    <span class="bar-label">P50 (Median)</span>
+                </div>
+                <div class="chart-bar">
+                    <div class="bar" style="height: 120px;">
+                        <span class="bar-value">{{.Summary.AvgResponseTime}}</span>
+                    </div>
+                    <span class="bar-label">Average</span>
+                </div>
+                <div class="chart-bar">
+                    <div class="bar" style="height: 150px;">
+                        <span class="bar-value">{{.Summary.P95ResponseTime}}</span>
+                    </div>
+                    <span class="bar-label">P95</span>
+                </div>
+                <div class="chart-bar">
+                    <div class="bar" style="height: 170px;">
+                        <span class="bar-value">{{.Summary.P99ResponseTime}}</span>
+                    </div>
+                    <span class="bar-label">P99</span>
+                </div>
+                <div class="chart-bar">
+                    <div class="bar" style="height: 200px;">
+                        <span class="bar-value">{{.Summary.MaxResponseTime}}</span>
+                    </div>
+                    <span class="bar-label">Maximum</span>
                 </div>
             </div>
         </div>
 
+        <!-- Status Codes -->
         {{if .Summary.StatusCodes}}
         <div class="section">
-            <h2 class="section-title">📈 Status Codes</h2>
-            <div>
+            <div class="section-header">
+                <span class="section-icon">📈</span>
+                <h2 class="section-title">Status Codes</h2>
+            </div>
+            <div class="status-codes-grid">
                 {{range $code, $count := .Summary.StatusCodes}}
-                <span class="status-code {{statusClass $code}}">{{$code}}: {{$count}} ({{printf "%.1f" (percentage $count $.Summary.TotalRequests)}}%)</span>
+                <div class="status-code-item">
+                    <span class="status-code-badge {{statusClass $code}}">{{$code}}</span>
+                    <div>
+                        <div class="status-code-count">{{$count}}</div>
+                        <div class="status-code-percent">{{printf "%.1f" (percentage $count $.Summary.TotalRequests)}}%</div>
+                    </div>
+                </div>
                 {{end}}
             </div>
         </div>
         {{end}}
 
+        <!-- Endpoint Results -->
         {{if .Endpoints}}
         <div class="section">
-            <h2 class="section-title">🎯 Endpoint Results</h2>
+            <div class="section-header">
+                <span class="section-icon">🎯</span>
+                <h2 class="section-title">Endpoint Results</h2>
+            </div>
             {{range .Endpoints}}
             <div class="endpoint-card {{if .Success}}success{{else}}failure{{end}}">
                 <div class="endpoint-header">
@@ -211,41 +815,103 @@
                         <div class="endpoint-name">{{.Name}}</div>
                         <div class="endpoint-url">{{.URL}}</div>
                     </div>
-                    {{if .Success}}
-                    <span class="success-badge">✓ Success</span>
-                    {{else}}
-                    <span class="failure-badge">✗ Failed</span>
-                    {{end}}
+                    <span class="endpoint-badge {{if .Success}}success{{else}}failure{{end}}">
+                        {{if .Success}}✓ Passed{{else}}✗ Failed{{end}}
+                    </span>
                 </div>
-                <div>
-                    Requests: {{.TotalRequests}} | Success: {{.SuccessfulReqs}} ({{printf "%.1f" .SuccessRate}}%) | Failed: {{.FailedReqs}}
+                <div class="endpoint-stats">
+                    <div class="endpoint-stat">
+                        <div class="endpoint-stat-value">{{.TotalRequests}}</div>
+                        <div class="endpoint-stat-label">Requests</div>
+                    </div>
+                    <div class="endpoint-stat">
+                        <div class="endpoint-stat-value" style="color: var(--accent-green);">{{.SuccessfulReqs}}</div>
+                        <div class="endpoint-stat-label">Success</div>
+                    </div>
+                    <div class="endpoint-stat">
+                        <div class="endpoint-stat-value" style="color: var(--accent-red);">{{.FailedReqs}}</div>
+                        <div class="endpoint-stat-label">Failed</div>
+                    </div>
+                    <div class="endpoint-stat">
+                        <div class="endpoint-stat-value">{{.AvgResponseTime}}</div>
+                        <div class="endpoint-stat-label">Avg Time</div>
+                    </div>
+                    <div class="endpoint-stat">
+                        <div class="endpoint-stat-value">{{.P50ResponseTime}}</div>
+                        <div class="endpoint-stat-label">P50</div>
+                    </div>
+                    <div class="endpoint-stat">
+                        <div class="endpoint-stat-value">{{.P95ResponseTime}}</div>
+                        <div class="endpoint-stat-label">P95</div>
+                    </div>
+                    <div class="endpoint-stat">
+                        <div class="endpoint-stat-value">{{.P99ResponseTime}}</div>
+                        <div class="endpoint-stat-label">P99</div>
+                    </div>
                 </div>
-                <div class="response-times">
-                    <div class="time-metric">
-                        <div class="time-label">Average</div>
-                        <div class="time-value">{{.AvgResponseTime}}</div>
+                {{if gt .TotalAssertions 0}}
+                <div class="endpoint-assertions">
+                    <div class="endpoint-assertions-title">
+                        <span>✅</span> Assertions
                     </div>
-                    <div class="time-metric">
-                        <div class="time-label">P50</div>
-                        <div class="time-value">{{.P50ResponseTime}}</div>
-                    </div>
-                    <div class="time-metric">
-                        <div class="time-label">P95</div>
-                        <div class="time-value">{{.P95ResponseTime}}</div>
-                    </div>
-                    <div class="time-metric">
-                        <div class="time-label">P99</div>
-                        <div class="time-value">{{.P99ResponseTime}}</div>
+                    <div class="assertions-mini-stats">
+                        <div class="assertions-mini-stat passed">
+                            <span>✓</span> {{.AssertionsPassed}} passed
+                        </div>
+                        <div class="assertions-mini-stat failed">
+                            <span>✗</span> {{.AssertionsFailed}} failed
+                        </div>
                     </div>
                 </div>
+                {{end}}
             </div>
             {{end}}
         </div>
         {{end}}
 
-        <div class="footer">
-            Generated by Bombardino
+        <!-- Errors Section -->
+        {{if .Summary.Errors}}
+        <div class="section">
+            <div class="section-header">
+                <span class="section-icon">❌</span>
+                <h2 class="section-title">Errors</h2>
+            </div>
+            <div class="errors-list">
+                {{range $error, $count := .Summary.Errors}}
+                <div class="error-item">
+                    <span class="error-message">{{$error}}</span>
+                    <span class="error-count">{{$count}}</span>
+                </div>
+                {{end}}
+            </div>
         </div>
+        {{end}}
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Generated by <strong>Bombardino</strong> v1.0.0</p>
+            <p><a href="https://github.com/andrearaponi/bombardino" target="_blank">github.com/andrearaponi/bombardino</a></p>
+        </footer>
     </div>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const button = document.querySelector('.theme-toggle');
+            if (html.getAttribute('data-theme') === 'light') {
+                html.removeAttribute('data-theme');
+                button.textContent = '🌙';
+            } else {
+                html.setAttribute('data-theme', 'light');
+                button.textContent = '☀️';
+            }
+        }
+
+        // Check for saved theme preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            document.documentElement.setAttribute('data-theme', 'light');
+            document.querySelector('.theme-toggle').textContent = '☀️';
+        }
+    </script>
 </body>
 </html>
