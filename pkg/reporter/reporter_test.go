@@ -298,7 +298,7 @@ func TestReporter_GenerateReport_LargeNumbers(t *testing.T) {
 
 	assert.Contains(t, output, "Total Requests:      1000000")
 	assert.Contains(t, output, "Successful:          999500 (100.0%)")
-	assert.Contains(t, output, "Failed:              500 (0.0%)")
+	assert.Contains(t, output, "Failed:              500 (0.1%)") // 500/1000000 = 0.05% rounds to 0.1%
 	assert.Contains(t, output, "Requests/sec:        277.78")
 }
 

@@ -1,0 +1,41 @@
+{
+  "name": "CRUD Example",
+  "global": {
+    "base_url": "http://localhost:8080",
+    "timeout": "30s",
+    "iterations": 1,
+    "headers": {"Content-Type": "application/json"}
+  },
+  "tests": [
+    {
+      "name": "Create",
+      "method": "POST",
+      "path": "/api/persons",
+      "expected_status": [201],
+      "body": {"name": "Mario", "surname": "Rossi", "age": 30, "height": 175, "weight": 75, "mail": "mario@test.com"},
+      "extract": [{"name": "id", "source": "body", "path": "id"}]
+    },
+    {
+      "name": "Read",
+      "method": "GET",
+      "path": "/api/persons/${id}",
+      "expected_status": [200],
+      "depends_on": ["Create"]
+    },
+    {
+      "name": "Update",
+      "method": "PUT",
+      "path": "/api/persons/${id}",
+      "expected_status": [200],
+      "depends_on": ["Read"],
+      "body": {"name": "Mario", "surname": "Rossi-Updated", "age": 31, "height": 175, "weight": 76, "mail": "mario@test.com"}
+    },
+    {
+      "name": "Delete",
+      "method": "DELETE",
+      "path": "/api/persons/${id}",
+      "expected_status": [204],
+      "depends_on": ["Update"]
+    }
+  ]
+}

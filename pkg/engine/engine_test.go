@@ -42,7 +42,7 @@ func TestEngine_Run_SimpleGET(t *testing.T) {
 	}
 
 	progressBar := progress.New(config.GetTotalRequests())
-	engine := New(2, progressBar)
+	engine := New(2, progressBar, false)
 
 	summary := engine.Run(config)
 
@@ -89,7 +89,7 @@ func TestEngine_Run_MultiplePOST(t *testing.T) {
 	}
 
 	progressBar := progress.New(config.GetTotalRequests())
-	engine := New(1, progressBar)
+	engine := New(1, progressBar, false)
 
 	summary := engine.Run(config)
 
@@ -126,7 +126,7 @@ func TestEngine_Run_UnexpectedStatusCode(t *testing.T) {
 	}
 
 	progressBar := progress.New(config.GetTotalRequests())
-	engine := New(1, progressBar)
+	engine := New(1, progressBar, false)
 
 	summary := engine.Run(config)
 
@@ -134,7 +134,7 @@ func TestEngine_Run_UnexpectedStatusCode(t *testing.T) {
 	assert.Equal(t, 0, summary.SuccessfulReqs)
 	assert.Equal(t, 2, summary.FailedReqs)
 	assert.Equal(t, 2, summary.StatusCodes[500])
-	assert.Contains(t, summary.Errors, "Unexpected status code: 500")
+	assert.Contains(t, summary.Errors, "Unexpected status code: 500 (expected: [200])")
 }
 
 func TestEngine_Run_WithCustomHeaders(t *testing.T) {
@@ -173,7 +173,7 @@ func TestEngine_Run_WithCustomHeaders(t *testing.T) {
 	}
 
 	progressBar := progress.New(config.GetTotalRequests())
-	engine := New(1, progressBar)
+	engine := New(1, progressBar, false)
 
 	summary := engine.Run(config)
 
@@ -224,7 +224,7 @@ func TestEngine_Run_MultipleTests(t *testing.T) {
 	}
 
 	progressBar := progress.New(config.GetTotalRequests())
-	engine := New(2, progressBar)
+	engine := New(2, progressBar, false)
 
 	summary := engine.Run(config)
 
@@ -260,7 +260,7 @@ func TestEngine_Run_Timeout(t *testing.T) {
 	}
 
 	progressBar := progress.New(config.GetTotalRequests())
-	engine := New(1, progressBar)
+	engine := New(1, progressBar, false)
 
 	summary := engine.Run(config)
 

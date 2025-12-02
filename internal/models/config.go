@@ -10,28 +10,46 @@ type Config struct {
 }
 
 type GlobalConfig struct {
-	BaseURL            string        `json:"base_url"`
-	Timeout            time.Duration `json:"timeout"`
-	Delay              time.Duration `json:"delay"`
-	Iterations         int           `json:"iterations,omitempty"`
-	Duration           time.Duration `json:"duration,omitempty"`
-	Headers            Headers       `json:"headers,omitempty"`
-	InsecureSkipVerify bool          `json:"insecure_skip_verify,omitempty"`
+	BaseURL            string                 `json:"base_url"`
+	Timeout            time.Duration          `json:"timeout"`
+	Delay              time.Duration          `json:"delay"`
+	Iterations         int                    `json:"iterations,omitempty"`
+	Duration           time.Duration          `json:"duration,omitempty"`
+	Headers            Headers                `json:"headers,omitempty"`
+	InsecureSkipVerify bool                   `json:"insecure_skip_verify,omitempty"`
+	Variables          map[string]interface{} `json:"variables,omitempty"`
+	ThinkTime          time.Duration          `json:"think_time,omitempty"`
+	ThinkTimeMin       time.Duration          `json:"think_time_min,omitempty"`
+	ThinkTimeMax       time.Duration          `json:"think_time_max,omitempty"`
 }
 
 type TestCase struct {
-	Name               string        `json:"name"`
-	Method             string        `json:"method"`
-	Path               string        `json:"path"`
-	Headers            Headers       `json:"headers,omitempty"`
-	Body               interface{}   `json:"body,omitempty"`
-	ExpectedStatus     []int         `json:"expected_status"`
-	Timeout            time.Duration `json:"timeout,omitempty"`
-	Delay              time.Duration `json:"delay,omitempty"`
-	Iterations         int           `json:"iterations,omitempty"`
-	Duration           time.Duration `json:"duration,omitempty"`
-	Assertions         []Assertion   `json:"assertions,omitempty"`
-	InsecureSkipVerify *bool         `json:"insecure_skip_verify,omitempty"`
+	Name               string                   `json:"name"`
+	Method             string                   `json:"method"`
+	Path               string                   `json:"path"`
+	Headers            Headers                  `json:"headers,omitempty"`
+	Body               interface{}              `json:"body,omitempty"`
+	ExpectedStatus     []int                    `json:"expected_status"`
+	Timeout            time.Duration            `json:"timeout,omitempty"`
+	Delay              time.Duration            `json:"delay,omitempty"`
+	Iterations         int                      `json:"iterations,omitempty"`
+	Duration           time.Duration            `json:"duration,omitempty"`
+	Assertions         []Assertion              `json:"assertions,omitempty"`
+	InsecureSkipVerify *bool                    `json:"insecure_skip_verify,omitempty"`
+	Extract            []ExtractionRule         `json:"extract,omitempty"`
+	DependsOn          []string                 `json:"depends_on,omitempty"`
+	ThinkTime          time.Duration            `json:"think_time,omitempty"`
+	ThinkTimeMin       time.Duration            `json:"think_time_min,omitempty"`
+	ThinkTimeMax       time.Duration            `json:"think_time_max,omitempty"`
+	Data               []map[string]interface{} `json:"data,omitempty"`
+	DataFile           string                   `json:"data_file,omitempty"`
+}
+
+// ExtractionRule defines how to extract a variable from a response
+type ExtractionRule struct {
+	Name   string `json:"name"`   // Variable name to store
+	Source string `json:"source"` // "body", "header", "status"
+	Path   string `json:"path"`   // JSON path for body, header name for header
 }
 
 type Headers map[string]string
@@ -44,34 +62,43 @@ type Assertion struct {
 }
 
 type TestResult struct {
-	TestName     string
-	URL          string
-	Method       string
-	StatusCode   int
-	ResponseTime time.Duration
-	Success      bool
-	Error        string
-	ResponseSize int64
-	RequestSize  int64
-	Timestamp    time.Time
+	TestName         string
+	URL              string
+	Method           string
+	StatusCode       int
+	ResponseTime     time.Duration
+	Success          bool
+	Error            string
+	ResponseSize     int64
+	RequestSize      int64
+	Timestamp        time.Time
+	AssertionsPassed int
+	AssertionsFailed int
+	AssertionErrors  []string
+	Skipped          bool
+	SkipReason       string
 }
 
 type Summary struct {
-	TotalRequests   int
-	SuccessfulReqs  int
-	FailedReqs      int
-	TotalTime       time.Duration
-	AvgResponseTime time.Duration
-	MinResponseTime time.Duration
-	MaxResponseTime time.Duration
-	P50ResponseTime time.Duration
-	P95ResponseTime time.Duration
-	P99ResponseTime time.Duration
-	RequestsPerSec  float64
-	StatusCodes     map[int]int
-	Errors          map[string]int
-	EndpointResults map[string]*EndpointSummary
-	DebugLogs       []DebugLog // Added for verbose mode
+	TotalRequests      int
+	SuccessfulReqs     int
+	FailedReqs         int
+	SkippedReqs        int
+	TotalTime          time.Duration
+	AvgResponseTime    time.Duration
+	MinResponseTime    time.Duration
+	MaxResponseTime    time.Duration
+	P50ResponseTime    time.Duration
+	P95ResponseTime    time.Duration
+	P99ResponseTime    time.Duration
+	RequestsPerSec     float64
+	StatusCodes        map[int]int
+	Errors             map[string]int
+	EndpointResults    map[string]*EndpointSummary
+	DebugLogs          []DebugLog // Added for verbose mode
+	TotalAssertions    int
+	AssertionsPassed   int
+	AssertionsFailed   int
 }
 
 type DebugLog struct {
@@ -89,17 +116,22 @@ type DebugLog struct {
 }
 
 type EndpointSummary struct {
-	Name            string
-	URL             string
-	TotalRequests   int
-	SuccessfulReqs  int
-	FailedReqs      int
-	AvgResponseTime time.Duration
-	P50ResponseTime time.Duration
-	P95ResponseTime time.Duration
-	P99ResponseTime time.Duration
-	StatusCodes     map[int]int
-	Errors          []string
+	Name             string
+	URL              string
+	TotalRequests    int
+	SuccessfulReqs   int
+	FailedReqs       int
+	SkippedReqs      int
+	AvgResponseTime  time.Duration
+	P50ResponseTime  time.Duration
+	P95ResponseTime  time.Duration
+	P99ResponseTime  time.Duration
+	StatusCodes      map[int]int
+	Errors           []string
+	TotalAssertions  int
+	AssertionsPassed int
+	AssertionsFailed int
+	FirstExecutedAt  time.Time // Track execution order
 }
 
 func (c *Config) GetTotalRequests() int {

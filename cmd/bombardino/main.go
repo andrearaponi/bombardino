@@ -26,11 +26,26 @@ func main() {
 		verbose      = flag.Bool("verbose", false, "Enable verbose output")
 		showVersion  = flag.Bool("version", false, "Show version information")
 		outputFormat = flag.String("output", "text", "Output format: text, json, or html")
+		validateOnly = flag.Bool("t", false, "Validate configuration and exit")
 	)
 	flag.Parse()
 
 	if *showVersion {
 		printVersion()
+		os.Exit(0)
+	}
+
+	if *validateOnly {
+		if *configFile == "" {
+			fmt.Println("❌ Configuration invalid: -config flag is required")
+			os.Exit(1)
+		}
+		cfg, err := config.LoadFromFile(*configFile)
+		if err != nil {
+			fmt.Printf("❌ Configuration invalid: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("✅ Configuration valid: %s (%d tests)\n", cfg.Name, len(cfg.Tests))
 		os.Exit(0)
 	}
 
@@ -47,11 +62,13 @@ func main() {
 		fmt.Println("  -workers int      Number of concurrent workers (default: 10)")
 		fmt.Println("  -verbose          Enable verbose output (default: false)")
 		fmt.Println("  -output string    Output format: text, json, or html (default: text)")
+		fmt.Println("  -t                Validate configuration and exit")
 		fmt.Println("  -version          Show version information")
 		fmt.Println()
 		fmt.Println("Examples:")
 		fmt.Println("  bombardino -config=test.json")
 		fmt.Println("  bombardino -config=test.json -workers=20 -output=json")
+		fmt.Println("  bombardino -t -config=test.json")
 		fmt.Println("  bombardino -version")
 		os.Exit(1)
 	}

@@ -1,0 +1,82 @@
+{
+  "name": "Data-Driven Person Creation Test",
+  "description": "Tests data-driven feature by creating multiple persons with inline data",
+  "global": {
+    "base_url": "http://localhost:8080",
+    "timeout": "30s",
+    "delay": "200ms",
+    "iterations": 1,
+    "think_time": "150ms",
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  },
+  "tests": [
+    {
+      "name": "Create Multiple Persons (Data-Driven)",
+      "description": "Creates different persons using inline data array",
+      "method": "POST",
+      "path": "/api/persons",
+      "expected_status": [201],
+      "data": [
+        {
+          "name": "Luigi",
+          "surname": "Verdi",
+          "age": 25,
+          "height": 180.0,
+          "weight": 80.0,
+          "mail": "luigi.verdi@test.com"
+        },
+        {
+          "name": "Anna",
+          "surname": "Bianchi",
+          "age": 28,
+          "height": 165.5,
+          "weight": 55.0,
+          "mail": "anna.bianchi@test.com"
+        },
+        {
+          "name": "Paolo",
+          "surname": "Neri",
+          "age": 35,
+          "height": 178.0,
+          "weight": 82.5,
+          "mail": "paolo.neri@test.com"
+        }
+      ],
+      "body": {
+        "name": "${data.name}",
+        "surname": "${data.surname}",
+        "age": "${data.age}",
+        "height": "${data.height}",
+        "weight": "${data.weight}",
+        "mail": "${data.mail}"
+      },
+      "assertions": [
+        {
+          "type": "status",
+          "target": "response",
+          "operator": "eq",
+          "value": 201
+        },
+        {
+          "type": "json_path",
+          "target": "id",
+          "operator": "exists",
+          "value": ""
+        }
+      ],
+      "extract": [
+        {"name": "created_id", "source": "body", "path": "id"}
+      ]
+    },
+    {
+      "name": "Cleanup Created Persons",
+      "description": "Delete the last created person",
+      "method": "DELETE",
+      "path": "/api/persons/${created_id}",
+      "expected_status": [204],
+      "depends_on": ["Create Multiple Persons (Data-Driven)"]
+    }
+  ]
+}
