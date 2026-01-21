@@ -705,6 +705,94 @@ Override of global think times for this test.
 
 ---
 
+### `compare_with` (optional)
+
+**Type:** `object`
+**Default:** none
+
+Compare the primary response with another endpoint. Useful for validating migrations, staging deployments, or API versioning.
+
+```json
+{
+  "compare_with": {
+    "endpoint": "https://api.staging.com",
+    "ignore_fields": ["timestamp", "request_id"],
+    "assertions": [
+      {"type": "status_match"},
+      {"type": "field_match", "target": "id"},
+      {"type": "structure_match"}
+    ]
+  }
+}
+```
+
+**Fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `endpoint` | string | Yes | Base URL of comparison endpoint |
+| `path` | string | No | Path override (defaults to primary path) |
+| `headers` | object | No | Additional headers for comparison request |
+| `timeout` | duration | No | Custom timeout for comparison request |
+| `assertions` | array | No | Comparison assertions (see below) |
+| `ignore_fields` | array | No | JSON paths to skip during comparison |
+| `mode` | string | No | Comparison mode: `full`, `partial`, `structural` |
+
+**Comparison Assertions:**
+
+| Type | Description |
+|------|-------------|
+| `status_match` | Both endpoints return same status code |
+| `field_match` | Specific field values match (use `target` for JSON path) |
+| `field_tolerance` | Numeric values within tolerance (use `tolerance`) |
+| `structure_match` | JSON structure is identical (ignoring values) |
+| `response_time_tolerance` | Response times within tolerance |
+| `header_match` | Specific header values match (use `target` for header name) |
+
+**header_match details:**
+
+Compares HTTP response headers between primary and compare endpoints. Essential for validating migrations where header behavior must be preserved.
+
+```json
+{"type": "header_match", "target": "Content-Type"}
+{"type": "header_match", "target": "Cache-Control", "operator": "eq"}
+{"type": "header_match", "target": "X-Request-Id", "operator": "exists"}
+```
+
+| Operator | Description |
+|----------|-------------|
+| `eq` | Exact header value match (default) |
+| `contains` | Primary header value contained in compare value |
+| `exists` | Header exists in compare response (doesn't check primary) |
+
+**Notes:**
+- Header names are case-insensitive (`Content-Type` = `content-type`)
+- Multiple header values are joined with `, ` for comparison
+- Both headers missing = pass (for `eq`/`contains`)
+- See [Tap Compare - Header Match](tap-compare.md#header_match) for migration scenarios
+
+**Tolerance formats:**
+- `0.1` - 10% (values < 1 treated as percentage)
+- `"15%"` - 15% (explicit percentage)
+- `10` - Absolute value of 10
+
+**Example with tolerance:**
+```json
+{
+  "compare_with": {
+    "endpoint": "https://staging.api.com",
+    "assertions": [
+      {"type": "field_tolerance", "target": "price", "tolerance": 0.05},
+      {"type": "response_time_tolerance", "tolerance": "20%"}
+    ]
+  }
+}
+```
+
+See [Tap Compare documentation](tap-compare.md) for complete guide.
+
+---
+
 ### `data` (optional)
 
 **Type:** `array` of `object`

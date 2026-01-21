@@ -46,42 +46,48 @@ type JSONReport struct {
 }
 
 type JSONSummary struct {
-	TotalRequests    int            `json:"total_requests"`
-	SuccessfulReqs   int            `json:"successful_requests"`
-	FailedReqs       int            `json:"failed_requests"`
-	SuccessRate      float64        `json:"success_rate_percent"`
-	TotalTime        string         `json:"total_time"`
-	AvgResponseTime  string         `json:"avg_response_time"`
-	MinResponseTime  string         `json:"min_response_time"`
-	MaxResponseTime  string         `json:"max_response_time"`
-	P50ResponseTime  string         `json:"p50_response_time"`
-	P95ResponseTime  string         `json:"p95_response_time"`
-	P99ResponseTime  string         `json:"p99_response_time"`
-	RequestsPerSec   float64        `json:"requests_per_sec"`
-	StatusCodes      map[string]int `json:"status_codes"`
-	Errors           map[string]int `json:"errors"`
-	TotalAssertions  int            `json:"total_assertions,omitempty"`
-	AssertionsPassed int            `json:"assertions_passed,omitempty"`
-	AssertionsFailed int            `json:"assertions_failed,omitempty"`
+	TotalRequests     int            `json:"total_requests"`
+	SuccessfulReqs    int            `json:"successful_requests"`
+	FailedReqs        int            `json:"failed_requests"`
+	SuccessRate       float64        `json:"success_rate_percent"`
+	TotalTime         string         `json:"total_time"`
+	AvgResponseTime   string         `json:"avg_response_time"`
+	MinResponseTime   string         `json:"min_response_time"`
+	MaxResponseTime   string         `json:"max_response_time"`
+	P50ResponseTime   string         `json:"p50_response_time"`
+	P95ResponseTime   string         `json:"p95_response_time"`
+	P99ResponseTime   string         `json:"p99_response_time"`
+	RequestsPerSec    float64        `json:"requests_per_sec"`
+	StatusCodes       map[string]int `json:"status_codes"`
+	Errors            map[string]int `json:"errors"`
+	TotalAssertions   int            `json:"total_assertions,omitempty"`
+	AssertionsPassed  int            `json:"assertions_passed,omitempty"`
+	AssertionsFailed  int            `json:"assertions_failed,omitempty"`
+	TotalComparisons  int            `json:"total_comparisons,omitempty"`
+	ComparisonsPassed int            `json:"comparisons_passed,omitempty"`
+	ComparisonsFailed int            `json:"comparisons_failed,omitempty"`
 }
 
 type JSONEndpoint struct {
-	Name             string         `json:"name"`
-	URL              string         `json:"url"`
-	TotalRequests    int            `json:"total_requests"`
-	SuccessfulReqs   int            `json:"successful_requests"`
-	FailedReqs       int            `json:"failed_requests"`
-	SuccessRate      float64        `json:"success_rate_percent"`
-	AvgResponseTime  string         `json:"avg_response_time"`
-	P50ResponseTime  string         `json:"p50_response_time"`
-	P95ResponseTime  string         `json:"p95_response_time"`
-	P99ResponseTime  string         `json:"p99_response_time"`
-	StatusCodes      map[string]int `json:"status_codes"`
-	Errors           []string       `json:"errors"`
-	Success          bool           `json:"success"`
-	TotalAssertions  int            `json:"total_assertions,omitempty"`
-	AssertionsPassed int            `json:"assertions_passed,omitempty"`
-	AssertionsFailed int            `json:"assertions_failed,omitempty"`
+	Name              string         `json:"name"`
+	URL               string         `json:"url"`
+	TotalRequests     int            `json:"total_requests"`
+	SuccessfulReqs    int            `json:"successful_requests"`
+	FailedReqs        int            `json:"failed_requests"`
+	SuccessRate       float64        `json:"success_rate_percent"`
+	AvgResponseTime   string         `json:"avg_response_time"`
+	P50ResponseTime   string         `json:"p50_response_time"`
+	P95ResponseTime   string         `json:"p95_response_time"`
+	P99ResponseTime   string         `json:"p99_response_time"`
+	StatusCodes       map[string]int `json:"status_codes"`
+	Errors            []string       `json:"errors"`
+	Success           bool           `json:"success"`
+	TotalAssertions   int            `json:"total_assertions,omitempty"`
+	AssertionsPassed  int            `json:"assertions_passed,omitempty"`
+	AssertionsFailed  int            `json:"assertions_failed,omitempty"`
+	TotalComparisons  int            `json:"total_comparisons,omitempty"`
+	ComparisonsPassed int            `json:"comparisons_passed,omitempty"`
+	ComparisonsFailed int            `json:"comparisons_failed,omitempty"`
 }
 
 func (r *Reporter) GenerateJSONReport(summary *models.Summary) error {
@@ -117,44 +123,50 @@ func (r *Reporter) createJSONReport(summary *models.Summary) JSONReport {
 		}
 
 		endpoints[name] = JSONEndpoint{
-			Name:             ep.Name,
-			URL:              ep.URL,
-			TotalRequests:    ep.TotalRequests,
-			SuccessfulReqs:   ep.SuccessfulReqs,
-			FailedReqs:       ep.FailedReqs,
-			SuccessRate:      epSuccessRate,
-			AvgResponseTime:  ep.AvgResponseTime.Round(1000).String(),
-			P50ResponseTime:  ep.P50ResponseTime.Round(1000).String(),
-			P95ResponseTime:  ep.P95ResponseTime.Round(1000).String(),
-			P99ResponseTime:  ep.P99ResponseTime.Round(1000).String(),
-			StatusCodes:      epStatusCodes,
-			Errors:           ep.Errors,
-			Success:          ep.FailedReqs == 0,
-			TotalAssertions:  ep.TotalAssertions,
-			AssertionsPassed: ep.AssertionsPassed,
-			AssertionsFailed: ep.AssertionsFailed,
+			Name:              ep.Name,
+			URL:               ep.URL,
+			TotalRequests:     ep.TotalRequests,
+			SuccessfulReqs:    ep.SuccessfulReqs,
+			FailedReqs:        ep.FailedReqs,
+			SuccessRate:       epSuccessRate,
+			AvgResponseTime:   ep.AvgResponseTime.Round(1000).String(),
+			P50ResponseTime:   ep.P50ResponseTime.Round(1000).String(),
+			P95ResponseTime:   ep.P95ResponseTime.Round(1000).String(),
+			P99ResponseTime:   ep.P99ResponseTime.Round(1000).String(),
+			StatusCodes:       epStatusCodes,
+			Errors:            ep.Errors,
+			Success:           ep.FailedReqs == 0,
+			TotalAssertions:   ep.TotalAssertions,
+			AssertionsPassed:  ep.AssertionsPassed,
+			AssertionsFailed:  ep.AssertionsFailed,
+			TotalComparisons:  ep.TotalComparisons,
+			ComparisonsPassed: ep.ComparisonsPassed,
+			ComparisonsFailed: ep.ComparisonsFailed,
 		}
 	}
 
 	jsonReport := JSONReport{
 		Summary: JSONSummary{
-			TotalRequests:    summary.TotalRequests,
-			SuccessfulReqs:   summary.SuccessfulReqs,
-			FailedReqs:       summary.FailedReqs,
-			SuccessRate:      successRate,
-			TotalTime:        summary.TotalTime.Round(1000).String(),
-			AvgResponseTime:  summary.AvgResponseTime.Round(1000).String(),
-			MinResponseTime:  summary.MinResponseTime.Round(1000).String(),
-			MaxResponseTime:  summary.MaxResponseTime.Round(1000).String(),
-			P50ResponseTime:  summary.P50ResponseTime.Round(1000).String(),
-			P95ResponseTime:  summary.P95ResponseTime.Round(1000).String(),
-			P99ResponseTime:  summary.P99ResponseTime.Round(1000).String(),
-			RequestsPerSec:   summary.RequestsPerSec,
-			StatusCodes:      statusCodes,
-			Errors:           summary.Errors,
-			TotalAssertions:  summary.TotalAssertions,
-			AssertionsPassed: summary.AssertionsPassed,
-			AssertionsFailed: summary.AssertionsFailed,
+			TotalRequests:     summary.TotalRequests,
+			SuccessfulReqs:    summary.SuccessfulReqs,
+			FailedReqs:        summary.FailedReqs,
+			SuccessRate:       successRate,
+			TotalTime:         summary.TotalTime.Round(1000).String(),
+			AvgResponseTime:   summary.AvgResponseTime.Round(1000).String(),
+			MinResponseTime:   summary.MinResponseTime.Round(1000).String(),
+			MaxResponseTime:   summary.MaxResponseTime.Round(1000).String(),
+			P50ResponseTime:   summary.P50ResponseTime.Round(1000).String(),
+			P95ResponseTime:   summary.P95ResponseTime.Round(1000).String(),
+			P99ResponseTime:   summary.P99ResponseTime.Round(1000).String(),
+			RequestsPerSec:    summary.RequestsPerSec,
+			StatusCodes:       statusCodes,
+			Errors:            summary.Errors,
+			TotalAssertions:   summary.TotalAssertions,
+			AssertionsPassed:  summary.AssertionsPassed,
+			AssertionsFailed:  summary.AssertionsFailed,
+			TotalComparisons:  summary.TotalComparisons,
+			ComparisonsPassed: summary.ComparisonsPassed,
+			ComparisonsFailed: summary.ComparisonsFailed,
 		},
 		Endpoints: endpoints,
 		Success:   summary.FailedReqs == 0,
@@ -207,6 +219,17 @@ func (r *Reporter) printSummary(summary *models.Summary) {
 		fmt.Printf("Total Assertions:    %d\n", summary.TotalAssertions)
 		fmt.Printf("Passed:              %d (%.1f%%)\n", summary.AssertionsPassed, assertionRate)
 		fmt.Printf("Failed:              %d (%.1f%%)\n", summary.AssertionsFailed, 100-assertionRate)
+		fmt.Println()
+	}
+
+	// Print comparisons summary if any comparisons were performed
+	if summary.TotalComparisons > 0 {
+		fmt.Println("🔀 COMPARISONS (Tap Compare)")
+		fmt.Println(strings.Repeat("─", 80))
+		comparisonRate := float64(summary.ComparisonsPassed) / float64(summary.TotalComparisons) * 100
+		fmt.Printf("Total Comparisons:   %d\n", summary.TotalComparisons)
+		fmt.Printf("Passed:              %d (%.1f%%)\n", summary.ComparisonsPassed, comparisonRate)
+		fmt.Printf("Failed:              %d (%.1f%%)\n", summary.ComparisonsFailed, 100-comparisonRate)
 		fmt.Println()
 	}
 
@@ -303,6 +326,12 @@ func (r *Reporter) printEndpointResults(summary *models.Summary) {
 			assertionRate := float64(ep.endpoint.AssertionsPassed) / float64(ep.endpoint.TotalAssertions) * 100
 			fmt.Printf("   Assertions: %d total | Passed: %d (%.1f%%) | Failed: %d\n",
 				ep.endpoint.TotalAssertions, ep.endpoint.AssertionsPassed, assertionRate, ep.endpoint.AssertionsFailed)
+		}
+
+		if ep.endpoint.TotalComparisons > 0 {
+			comparisonRate := float64(ep.endpoint.ComparisonsPassed) / float64(ep.endpoint.TotalComparisons) * 100
+			fmt.Printf("   Comparisons: %d total | Passed: %d (%.1f%%) | Failed: %d\n",
+				ep.endpoint.TotalComparisons, ep.endpoint.ComparisonsPassed, comparisonRate, ep.endpoint.ComparisonsFailed)
 		}
 
 		if len(ep.endpoint.StatusCodes) > 0 {

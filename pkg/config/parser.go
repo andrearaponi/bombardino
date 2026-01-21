@@ -73,6 +73,7 @@ type rawTestCase struct {
 	ThinkTimeMax       string                   `json:"think_time_max,omitempty"`
 	Data               []map[string]interface{} `json:"data,omitempty"`
 	DataFile           string                   `json:"data_file,omitempty"`
+	CompareWith        *rawCompareConfig        `json:"compare_with,omitempty"`
 }
 
 type rawExtraction struct {
@@ -86,6 +87,23 @@ type rawAssertion struct {
 	Target   string      `json:"target"`
 	Operator string      `json:"operator"`
 	Value    interface{} `json:"value"`
+}
+
+type rawCompareConfig struct {
+	Endpoint     string                `json:"endpoint"`
+	Path         string                `json:"path,omitempty"`
+	Headers      map[string]string     `json:"headers,omitempty"`
+	Timeout      string                `json:"timeout,omitempty"`
+	Assertions   []rawCompareAssertion `json:"assertions,omitempty"`
+	IgnoreFields []string              `json:"ignore_fields,omitempty"`
+	Mode         string                `json:"mode,omitempty"`
+}
+
+type rawCompareAssertion struct {
+	Type      string      `json:"type"`
+	Target    string      `json:"target,omitempty"`
+	Operator  string      `json:"operator,omitempty"`
+	Tolerance interface{} `json:"tolerance,omitempty"`
 }
 
 func parseConfig(raw *rawConfig) (*models.Config, error) {
@@ -244,6 +262,36 @@ func parseConfig(raw *rawConfig) (*models.Config, error) {
 		test.Data = rawTest.Data
 		test.DataFile = rawTest.DataFile
 
+		// Parse compare_with configuration
+		if rawTest.CompareWith != nil {
+			compareConfig := &models.CompareConfig{
+				Endpoint:     rawTest.CompareWith.Endpoint,
+				Path:         rawTest.CompareWith.Path,
+				Headers:      rawTest.CompareWith.Headers,
+				IgnoreFields: rawTest.CompareWith.IgnoreFields,
+				Mode:         rawTest.CompareWith.Mode,
+			}
+
+			if rawTest.CompareWith.Timeout != "" {
+				timeout, err := time.ParseDuration(rawTest.CompareWith.Timeout)
+				if err != nil {
+					return nil, fmt.Errorf("invalid compare_with timeout for test %d: %w", i, err)
+				}
+				compareConfig.Timeout = timeout
+			}
+
+			for _, rawAssertion := range rawTest.CompareWith.Assertions {
+				compareConfig.Assertions = append(compareConfig.Assertions, models.CompareAssertion{
+					Type:      rawAssertion.Type,
+					Target:    rawAssertion.Target,
+					Operator:  rawAssertion.Operator,
+					Tolerance: rawAssertion.Tolerance,
+				})
+			}
+
+			test.CompareWith = compareConfig
+		}
+
 		config.Tests = append(config.Tests, test)
 	}
 
@@ -288,6 +336,23 @@ func validateConfig(config *models.Config) error {
 
 		if len(test.ExpectedStatus) == 0 {
 			return fmt.Errorf("test %d: at least one expected status is required", i)
+		}
+
+		// Validate compare_with configuration
+		if test.CompareWith != nil {
+			if test.CompareWith.Endpoint == "" {
+				return fmt.Errorf("test %d: compare_with.endpoint is required when compare_with is specified", i)
+			}
+
+			for j, assertion := range test.CompareWith.Assertions {
+				if assertion.Type == "" {
+					return fmt.Errorf("test %d: compare_with.assertions[%d].type is required", i, j)
+				}
+				// Target is required for all types except structure_match and status_match
+				if assertion.Target == "" && assertion.Type != "structure_match" && assertion.Type != "status_match" {
+					return fmt.Errorf("test %d: compare_with.assertions[%d].target is required for type %s", i, j, assertion.Type)
+				}
+			}
 		}
 	}
 

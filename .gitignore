@@ -37,3 +37,8 @@ TODO.md
 # MCP Server
 mcp/node_modules/
 mcp/dist/
+
+# Bob the Fixer local configuration
+bobthefixer.env
+# SonarQube local configuration
+sonar-project.properties
