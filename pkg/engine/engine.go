@@ -19,34 +19,37 @@ import (
 
 	"github.com/andrearaponi/bombardino/internal/models"
 	"github.com/andrearaponi/bombardino/pkg/assertion"
+	"github.com/andrearaponi/bombardino/pkg/comparison"
 	"github.com/andrearaponi/bombardino/pkg/progress"
 	"github.com/andrearaponi/bombardino/pkg/variables"
 	"github.com/google/uuid"
 )
 
 type Engine struct {
-	workers            int
-	progressBar        *progress.ProgressBar
-	verbose            bool
-	logChan            chan models.DebugLog
-	debugLogs          []models.DebugLog
-	logMutex           sync.Mutex
-	assertionEvaluator *assertion.Evaluator
-	varStore           *variables.Store
-	varExtractor       *variables.Extractor
-	varSubstitutor     *variables.Substitutor
+	workers              int
+	progressBar          *progress.ProgressBar
+	verbose              bool
+	logChan              chan models.DebugLog
+	debugLogs            []models.DebugLog
+	logMutex             sync.Mutex
+	assertionEvaluator   *assertion.Evaluator
+	comparisonEvaluator  *comparison.Evaluator
+	varStore             *variables.Store
+	varExtractor         *variables.Extractor
+	varSubstitutor       *variables.Substitutor
 }
 
 func New(workers int, progressBar *progress.ProgressBar, verbose bool) *Engine {
 	varStore := variables.NewStore()
 	e := &Engine{
-		workers:            workers,
-		progressBar:        progressBar,
-		verbose:            verbose,
-		assertionEvaluator: assertion.New(verbose),
-		varStore:           varStore,
-		varExtractor:       variables.NewExtractor(varStore),
-		varSubstitutor:     variables.NewSubstitutor(varStore),
+		workers:             workers,
+		progressBar:         progressBar,
+		verbose:             verbose,
+		assertionEvaluator:  assertion.New(verbose),
+		comparisonEvaluator: comparison.New(verbose),
+		varStore:            varStore,
+		varExtractor:        variables.NewExtractor(varStore),
+		varSubstitutor:      variables.NewSubstitutor(varStore),
 	}
 	if verbose {
 		e.logChan = make(chan models.DebugLog, 100)
@@ -683,6 +686,21 @@ func (e *Engine) executeTest(job Job) models.TestResult {
 		}
 	}
 
+	// Execute tap compare if configured
+	if job.TestCase.CompareWith != nil {
+		compResult := e.executeComparison(job, body, resp.StatusCode, responseTime, resp.Header)
+		result.ComparisonResult = compResult
+
+		if compResult != nil && !compResult.Success {
+			result.Success = false
+			if result.Error == "" {
+				result.Error = "Comparison failed"
+			} else {
+				result.Error += "; Comparison failed"
+			}
+		}
+	}
+
 	return result
 }
 
@@ -730,6 +748,161 @@ func (e *Engine) isExpectedStatus(statusCode int, expectedStatuses []int) bool {
 		}
 	}
 	return false
+}
+
+// executeComparison executes the comparison request and evaluates differences
+func (e *Engine) executeComparison(job Job, primaryBody []byte, primaryStatus int, primaryTime time.Duration, primaryHeaders http.Header) *models.ComparisonResult {
+	compareConfig := job.TestCase.CompareWith
+
+	result := &models.ComparisonResult{
+		PrimaryResponse: models.ResponseData{
+			StatusCode:   primaryStatus,
+			ResponseTime: primaryTime,
+			BodySize:     int64(len(primaryBody)),
+			Body:         primaryBody,
+		},
+	}
+
+	// Build comparison URL
+	compareURL := strings.TrimSuffix(compareConfig.Endpoint, "/")
+	if compareConfig.Path != "" {
+		compareURL += "/" + strings.TrimPrefix(compareConfig.Path, "/")
+	} else {
+		// Use same path as primary
+		path := strings.TrimPrefix(job.TestCase.Path, "/")
+		compareURL += "/" + path
+	}
+	compareURL = e.varSubstitutor.Substitute(compareURL)
+
+	// Create comparison request
+	var body io.Reader
+	if job.TestCase.Body != nil {
+		substitutedBody := e.varSubstitutor.SubstituteBody(job.TestCase.Body)
+		jsonBody, err := json.Marshal(substitutedBody)
+		if err != nil {
+			result.Error = fmt.Sprintf("failed to marshal body: %v", err)
+			return result
+		}
+		body = bytes.NewReader(jsonBody)
+	}
+
+	req, err := http.NewRequest(job.TestCase.Method, compareURL, body)
+	if err != nil {
+		result.Error = fmt.Sprintf("failed to create comparison request: %v", err)
+		return result
+	}
+
+	// Set headers: global -> test-specific -> compare-specific
+	for key, value := range job.Config.Global.Headers {
+		req.Header.Set(key, e.varSubstitutor.Substitute(value))
+	}
+	for key, value := range job.TestCase.Headers {
+		req.Header.Set(key, e.varSubstitutor.Substitute(value))
+	}
+	for key, value := range compareConfig.Headers {
+		req.Header.Set(key, e.varSubstitutor.Substitute(value))
+	}
+
+	if job.TestCase.Body != nil && req.Header.Get("Content-Type") == "" {
+		req.Header.Set("Content-Type", "application/json")
+	}
+
+	// Configure timeout
+	timeout := compareConfig.Timeout
+	if timeout == 0 {
+		timeout = job.TestCase.Timeout
+	}
+	if timeout == 0 {
+		timeout = job.Config.Global.Timeout
+	}
+
+	// Configure TLS
+	skipVerify := job.Config.Global.InsecureSkipVerify
+	if job.TestCase.InsecureSkipVerify != nil {
+		skipVerify = *job.TestCase.InsecureSkipVerify
+	}
+
+	var transport *http.Transport
+	if skipVerify {
+		transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+	} else {
+		transport = &http.Transport{}
+	}
+
+	client := &http.Client{
+		Timeout:   timeout,
+		Transport: transport,
+	}
+
+	// Execute comparison request
+	compareStart := time.Now()
+	resp, err := client.Do(req)
+	if err != nil {
+		result.Error = fmt.Sprintf("comparison request failed: %v", err)
+		return result
+	}
+	defer resp.Body.Close()
+
+	compareBody, _ := io.ReadAll(resp.Body)
+	compareTime := time.Since(compareStart)
+
+	result.CompareResponse = models.ResponseData{
+		StatusCode:   resp.StatusCode,
+		ResponseTime: compareTime,
+		BodySize:     int64(len(compareBody)),
+		Body:         compareBody,
+	}
+
+	// Perform comparison
+	e.comparisonEvaluator.SetIgnoreFields(compareConfig.IgnoreFields)
+	e.comparisonEvaluator.SetMode(compareConfig.Mode)
+
+	ctx := comparison.NewContext(
+		primaryStatus, primaryTime, primaryBody, convertHeaders(primaryHeaders),
+		resp.StatusCode, compareTime, compareBody, convertHeaders(resp.Header),
+	)
+
+	compResult := e.comparisonEvaluator.Compare(ctx, compareConfig.Assertions)
+
+	result.Success = compResult.Success
+
+	// Convert field diffs
+	for _, diff := range compResult.FieldDiffs {
+		result.FieldDiffs = append(result.FieldDiffs, models.FieldDiff{
+			Path:         diff.Path,
+			PrimaryValue: diff.PrimaryValue,
+			CompareValue: diff.CompareValue,
+			Type:         string(diff.DiffType),
+			Message:      diff.Message,
+		})
+	}
+
+	// Convert assertion results
+	for _, ar := range compResult.AssertionResults {
+		result.AssertionResults = append(result.AssertionResults, models.CompareAssertionResult{
+			Assertion:    models.CompareAssertion{Type: ar.Type, Target: ar.Target},
+			Passed:       ar.Passed,
+			PrimaryValue: ar.PrimaryValue,
+			CompareValue: ar.CompareValue,
+			Message:      ar.Message,
+		})
+	}
+
+	return result
+}
+
+// convertHeaders converts http.Header to map[string][]string
+func convertHeaders(h http.Header) map[string][]string {
+	if h == nil {
+		return nil
+	}
+	result := make(map[string][]string)
+	for k, v := range h {
+		result[k] = v
+	}
+	return result
 }
 
 func (e *Engine) collectResults(results <-chan models.TestResult, totalRequests int) *models.Summary {
@@ -794,6 +967,19 @@ func (e *Engine) collectResults(results <-chan models.TestResult, totalRequests 
 		endpoint.AssertionsPassed += result.AssertionsPassed
 		endpoint.AssertionsFailed += result.AssertionsFailed
 		endpoint.TotalAssertions += result.AssertionsPassed + result.AssertionsFailed
+
+		// Aggregate comparison results
+		if result.ComparisonResult != nil {
+			summary.TotalComparisons++
+			endpoint.TotalComparisons++
+			if result.ComparisonResult.Success {
+				summary.ComparisonsPassed++
+				endpoint.ComparisonsPassed++
+			} else {
+				summary.ComparisonsFailed++
+				endpoint.ComparisonsFailed++
+			}
+		}
 	}
 
 	if len(allResults) > 0 {
@@ -1210,6 +1396,19 @@ func (e *Engine) calculateSummaryFromResults(allResults []models.TestResult, sta
 		endpoint.AssertionsPassed += result.AssertionsPassed
 		endpoint.AssertionsFailed += result.AssertionsFailed
 		endpoint.TotalAssertions += result.AssertionsPassed + result.AssertionsFailed
+
+		// Aggregate comparison results
+		if result.ComparisonResult != nil {
+			summary.TotalComparisons++
+			endpoint.TotalComparisons++
+			if result.ComparisonResult.Success {
+				summary.ComparisonsPassed++
+				endpoint.ComparisonsPassed++
+			} else {
+				summary.ComparisonsFailed++
+				endpoint.ComparisonsFailed++
+			}
+		}
 	}
 
 	// Calculate response time stats (excluding skipped)

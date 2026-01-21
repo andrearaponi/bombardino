@@ -25,6 +25,7 @@
 - **Concurrent Workers** - Configurable worker pool for high throughput
 - **SSL/TLS Support** - Skip verification for self-signed certificates
 - **AI-Powered Generation** - MCP server for AI assistants to generate tests
+- **Tap Compare** - Compare responses between two API endpoints
 
 ## Quick Start
 
@@ -115,6 +116,7 @@ Full documentation is available in the [`docs/`](docs/) folder:
 | [Data-Driven Testing](docs/data-driven-testing.md) | Test with multiple data sets |
 | [Output Formats](docs/output-formats.md) | Text, JSON, HTML reports |
 | [AI Generation](docs/ai-generation.md) | Generate tests with AI assistants |
+| [Tap Compare](docs/tap-compare.md) | Compare responses between endpoints |
 | [Tutorial: CRUD API](docs/tutorial-crud-api.md) | Complete walkthrough |
 
 ## Example Configuration
@@ -125,8 +127,7 @@ Full documentation is available in the [`docs/`](docs/) folder:
   "global": {
     "base_url": "https://jsonplaceholder.typicode.com",
     "timeout": "30s",
-    "iterations": 1,
-    "headers": {"Content-Type": "application/json"}
+    "iterations": 1
   },
   "tests": [
     {
@@ -135,22 +136,25 @@ Full documentation is available in the [`docs/`](docs/) folder:
       "path": "/posts/1",
       "expected_status": [200],
       "assertions": [
-        {"type": "json_path", "target": "id", "operator": "eq", "value": 1},
-        {"type": "json_path", "target": "userId", "operator": "exists", "value": ""}
-      ],
-      "extract": [
-        {"name": "post_id", "source": "body", "path": "id"}
+        {"type": "json_path", "target": "id", "operator": "eq", "value": 1}
       ]
     },
     {
-      "name": "Get Post Comments",
+      "name": "Compare Users Endpoint",
       "method": "GET",
-      "path": "/posts/${post_id}/comments",
+      "path": "/users/1",
       "expected_status": [200],
-      "depends_on": ["Get Post"],
-      "assertions": [
-        {"type": "json_path", "target": "0.postId", "operator": "eq", "value": 1}
-      ]
+      "compare_with": {
+        "endpoint": "https://jsonplaceholder.typicode.com",
+        "path": "/users/1",
+        "assertions": [
+          {"type": "status_match"},
+          {"type": "header_match", "target": "Content-Type"},
+          {"type": "field_match", "target": "id"},
+          {"type": "structure_match"}
+        ],
+        "ignore_fields": ["website"]
+      }
     }
   ]
 }
@@ -164,6 +168,7 @@ bombardino/
 ├── pkg/
 │   ├── config/         # Configuration parser
 │   ├── engine/         # Test execution engine
+│   ├── comparison/     # Tap compare engine
 │   ├── variables/      # Variable substitution
 │   ├── assertions/     # Assertion system
 │   ├── progress/       # Progress bar

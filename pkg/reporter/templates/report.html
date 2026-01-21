@@ -734,6 +734,35 @@
         </div>
         {{end}}
 
+        <!-- Comparisons Section -->
+        {{if gt .Summary.TotalComparisons 0}}
+        <div class="section">
+            <div class="section-header">
+                <span class="section-icon">🔀</span>
+                <h2 class="section-title">Tap Compare Results</h2>
+            </div>
+            <div class="assertions-summary">
+                <div class="assertion-stat">
+                    <div class="assertion-stat-value total">{{.Summary.TotalComparisons}}</div>
+                    <div class="assertion-stat-label">Total Comparisons</div>
+                </div>
+                <div class="assertion-stat">
+                    <div class="assertion-stat-value passed">{{.Summary.ComparisonsPassed}}</div>
+                    <div class="assertion-stat-label">Passed</div>
+                </div>
+                <div class="assertion-stat">
+                    <div class="assertion-stat-value failed">{{.Summary.ComparisonsFailed}}</div>
+                    <div class="assertion-stat-label">Failed</div>
+                </div>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" style="height: 12px;">
+                    <div class="progress-fill success" style="width: {{percentage .Summary.ComparisonsPassed .Summary.TotalComparisons}}%;"></div>
+                </div>
+            </div>
+        </div>
+        {{end}}
+
         <!-- Response Times -->
         <div class="section">
             <div class="section-header">
@@ -860,6 +889,21 @@
                         </div>
                         <div class="assertions-mini-stat failed">
                             <span>✗</span> {{.AssertionsFailed}} failed
+                        </div>
+                    </div>
+                </div>
+                {{end}}
+                {{if gt .TotalComparisons 0}}
+                <div class="endpoint-assertions">
+                    <div class="endpoint-assertions-title">
+                        <span>🔀</span> Comparisons
+                    </div>
+                    <div class="assertions-mini-stats">
+                        <div class="assertions-mini-stat passed">
+                            <span>✓</span> {{.ComparisonsPassed}} passed
+                        </div>
+                        <div class="assertions-mini-stat failed">
+                            <span>✗</span> {{.ComparisonsFailed}} failed
                         </div>
                     </div>
                 </div>

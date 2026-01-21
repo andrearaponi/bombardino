@@ -203,6 +203,76 @@ export const configSchema = {
             type: "boolean",
             description: "Override global insecure_skip_verify for this test",
           },
+          compare_with: {
+            type: "object",
+            description: "Compare response with another endpoint (tap compare)",
+            properties: {
+              endpoint: {
+                type: "string",
+                description: "Base URL of comparison endpoint (required)",
+              },
+              path: {
+                type: "string",
+                description: "Path override (defaults to primary path)",
+              },
+              headers: {
+                type: "object",
+                description: "Additional headers for comparison request",
+                additionalProperties: { type: "string" },
+              },
+              timeout: {
+                type: "string",
+                description: "Custom timeout for comparison request",
+              },
+              assertions: {
+                type: "array",
+                description: "Comparison assertions",
+                items: {
+                  type: "object",
+                  properties: {
+                    type: {
+                      type: "string",
+                      enum: [
+                        "status_match",
+                        "field_match",
+                        "field_tolerance",
+                        "structure_match",
+                        "response_time_tolerance",
+                        "header_match",
+                      ],
+                      description: "Comparison assertion type",
+                    },
+                    target: {
+                      type: "string",
+                      description: "JSON path for field assertions",
+                    },
+                    operator: {
+                      type: "string",
+                      enum: ["eq", "contains", "exists"],
+                      description: "Comparison operator (eq/contains for field_match, eq/contains/exists for header_match)",
+                    },
+                    tolerance: {
+                      description:
+                        "Tolerance value: 0.1 = 10%, '15%' = 15%, 10 = absolute value",
+                    },
+                  },
+                },
+              },
+              ignore_fields: {
+                type: "array",
+                items: { type: "string" },
+                description:
+                  "Fields to skip during comparison (e.g., timestamp, request_id)",
+              },
+              mode: {
+                type: "string",
+                enum: ["full", "partial", "structural"],
+                description: "Comparison mode",
+                default: "full",
+              },
+            },
+            required: ["endpoint"],
+          },
         },
       },
     },
@@ -302,6 +372,37 @@ export const examples = [
             { type: "response_time", target: "response", operator: "lt", value: "500ms" },
             { type: "header", target: "Content-Type", operator: "contains", value: "json" },
           ],
+        },
+      ],
+    },
+  },
+  {
+    name: "Tap Compare - Production vs Staging",
+    description: "Compare API responses between two endpoints to validate migrations or deployments",
+    config: {
+      name: "Production vs Staging Validation",
+      global: {
+        base_url: "https://jsonplaceholder.typicode.com",
+        timeout: "30s",
+        iterations: 3,
+      },
+      tests: [
+        {
+          name: "Compare Users API",
+          method: "GET",
+          path: "/users/1",
+          expected_status: [200],
+          compare_with: {
+            endpoint: "https://jsonplaceholder.typicode.com",
+            ignore_fields: ["website"],
+            assertions: [
+              { type: "status_match" },
+              { type: "field_match", target: "id" },
+              { type: "field_match", target: "email" },
+              { type: "header_match", target: "Content-Type" },
+              { type: "structure_match" },
+            ],
+          },
         },
       ],
     },
