@@ -1,0 +1,76 @@
+{
+  "name": "Tap Compare Example - JSONPlaceholder API",
+  "description": "Demonstrates the tap compare feature by comparing responses from two different endpoints",
+  "global": {
+    "base_url": "https://jsonplaceholder.typicode.com",
+    "timeout": "30s",
+    "iterations": 3
+  },
+  "tests": [
+    {
+      "name": "Compare Users Endpoint",
+      "method": "GET",
+      "path": "/users/1",
+      "expected_status": [200],
+      "compare_with": {
+        "endpoint": "https://jsonplaceholder.typicode.com",
+        "path": "/users/1",
+        "assertions": [
+          {"type": "status_match"},
+          {"type": "field_match", "target": "id"},
+          {"type": "field_match", "target": "name"},
+          {"type": "field_match", "target": "email"},
+          {"type": "structure_match"}
+        ],
+        "ignore_fields": ["website"]
+      }
+    },
+    {
+      "name": "Compare Posts Endpoint with Field Match",
+      "method": "GET",
+      "path": "/posts/1",
+      "expected_status": [200],
+      "compare_with": {
+        "endpoint": "https://jsonplaceholder.typicode.com",
+        "path": "/posts/1",
+        "assertions": [
+          {"type": "field_match", "target": "userId"},
+          {"type": "field_match", "target": "id"},
+          {"type": "field_match", "target": "title"}
+        ]
+      }
+    },
+    {
+      "name": "Compare Comments with Tolerance",
+      "method": "GET",
+      "path": "/comments/1",
+      "expected_status": [200],
+      "compare_with": {
+        "endpoint": "https://jsonplaceholder.typicode.com",
+        "path": "/comments/1",
+        "assertions": [
+          {"type": "status_match"},
+          {"type": "field_match", "target": "postId"},
+          {"type": "field_match", "target": "id"}
+        ]
+      }
+    },
+    {
+      "name": "Compare Headers - Migration Validation",
+      "method": "GET",
+      "path": "/todos/1",
+      "expected_status": [200],
+      "compare_with": {
+        "endpoint": "https://jsonplaceholder.typicode.com",
+        "path": "/todos/1",
+        "assertions": [
+          {"type": "status_match"},
+          {"type": "header_match", "target": "Content-Type"},
+          {"type": "header_match", "target": "Cache-Control", "operator": "exists"},
+          {"type": "field_match", "target": "id"},
+          {"type": "structure_match"}
+        ]
+      }
+    }
+  ]
+}
